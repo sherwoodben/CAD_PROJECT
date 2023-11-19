@@ -1,0 +1,67 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32526.322
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Curves", "Curves\Curves.vcxproj", "{9D810924-ED13-4A6A-8EE5-A8032850802B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CAD_Program", "CAD_Program\CAD_Program.vcxproj", "{AF3C2FDB-59E8-4DD1-899D-AE5D081B9E03}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ImGui Headers", "ImGui Headers", "{345C0AD8-0B45-4747-BC6C-2362DC81E0AD}"
+	ProjectSection(SolutionItems) = preProject
+		imgui\imconfig.h = imgui\imconfig.h
+		imgui\imgui.h = imgui\imgui.h
+		imgui\imgui_impl_glfw.h = imgui\imgui_impl_glfw.h
+		imgui\imgui_impl_opengl3.h = imgui\imgui_impl_opengl3.h
+		imgui\imgui_impl_opengl3_loader.h = imgui\imgui_impl_opengl3_loader.h
+		imgui\imgui_internal.h = imgui\imgui_internal.h
+		imgui\imgui_stdlib.h = imgui\imgui_stdlib.h
+		imgui\imstb_rectpack.h = imgui\imstb_rectpack.h
+		imgui\imstb_textedit.h = imgui\imstb_textedit.h
+		imgui\imstb_truetype.h = imgui\imstb_truetype.h
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ImGui Source", "ImGui Source", "{04C74511-5402-4B2A-84C5-5EA9FBA1BA04}"
+	ProjectSection(SolutionItems) = preProject
+		imgui\imgui.cpp = imgui\imgui.cpp
+		imgui\imgui_demo.cpp = imgui\imgui_demo.cpp
+		imgui\imgui_draw.cpp = imgui\imgui_draw.cpp
+		imgui\imgui_impl_glfw.cpp = imgui\imgui_impl_glfw.cpp
+		imgui\imgui_impl_opengl3.cpp = imgui\imgui_impl_opengl3.cpp
+		imgui\imgui_stdlib.cpp = imgui\imgui_stdlib.cpp
+		imgui\imgui_tables.cpp = imgui\imgui_tables.cpp
+		imgui\imgui_widgets.cpp = imgui\imgui_widgets.cpp
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Debug|x64.ActiveCfg = Debug|x64
+		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Debug|x64.Build.0 = Debug|x64
+		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Debug|x86.ActiveCfg = Debug|Win32
+		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Debug|x86.Build.0 = Debug|Win32
+		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Release|x64.ActiveCfg = Release|x64
+		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Release|x64.Build.0 = Release|x64
+		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Release|x86.ActiveCfg = Release|Win32
+		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Release|x86.Build.0 = Release|Win32
+		{AF3C2FDB-59E8-4DD1-899D-AE5D081B9E03}.Debug|x64.ActiveCfg = Debug|x64
+		{AF3C2FDB-59E8-4DD1-899D-AE5D081B9E03}.Debug|x64.Build.0 = Debug|x64
+		{AF3C2FDB-59E8-4DD1-899D-AE5D081B9E03}.Debug|x86.ActiveCfg = Debug|Win32
+		{AF3C2FDB-59E8-4DD1-899D-AE5D081B9E03}.Debug|x86.Build.0 = Debug|Win32
+		{AF3C2FDB-59E8-4DD1-899D-AE5D081B9E03}.Release|x64.ActiveCfg = Release|x64
+		{AF3C2FDB-59E8-4DD1-899D-AE5D081B9E03}.Release|x64.Build.0 = Release|x64
+		{AF3C2FDB-59E8-4DD1-899D-AE5D081B9E03}.Release|x86.ActiveCfg = Release|Win32
+		{AF3C2FDB-59E8-4DD1-899D-AE5D081B9E03}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8BC6D577-6069-4EF3-8E07-5FB29CF67430}
+	EndGlobalSection
+EndGlobal
