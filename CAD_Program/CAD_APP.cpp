@@ -119,6 +119,7 @@ void CAD_APP::mouseScrollCallback(GLFWwindow* relevantWindow, double xOffset, do
 {
 	//std::cout << "Scroll: " << yOffset << std::endl;
 	messageManager.ReceiveMessage({ "M_SCROLL", std::to_string(yOffset)});
+	//std::cout << yOffset << std::endl;
 }
 
 bool CAD_APP::InitializeGlfw()

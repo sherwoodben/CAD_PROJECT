@@ -81,14 +81,28 @@ void CAD_SCENE::CloseScene()
 void CAD_SCENE::ProcessMessage(Message msg)
 {
 	std::cout << msg.messageType << std::endl;
-	std::cout << msg.messageData << std::endl;
+	
 
+	//Middle mouse toggles the arc ball for manipulating the view
 	if (msg.messageType == "M_MOUSE")
 	{
 		viewArcBallOn = (msg.messageData == "PRESSED");
 
 		arcClickLastPos[0] = mousePos[0];
 		arcClickLastPos[1] = mousePos[1];
+	}
+
+	//mouse when scroll zooms in and out
+	if (msg.messageType == "M_SCROLL")
+	{
+		std::cout << std::log(2 + std::stof(msg.messageData)) << std::endl;
+
+		float zoomDelta = std::stof(msg.messageData);
+
+		if (this->GetMainCamera())
+		{
+			this->GetMainCamera()->ChangeZoom(zoomDelta);
+		}
 	}
 
 	
@@ -99,7 +113,6 @@ void CAD_SCENE::UpdateMousePosition()
 	glfwGetCursorPos(glfwGetCurrentContext(), &mousePos[0], &mousePos[1]);
 	mousePos[0] = std::min(mousePos[0], (double)screenWidth);
 	mousePos[1] = std::min(mousePos[1], (double)screenHeight);
-	std::cout << "Mouse X: " << mousePos[0] << ", Mouse Y: " << mousePos[1] << std::endl;
 
 	if (viewArcBallOn)
 	{
@@ -143,60 +156,32 @@ double CAD_SCENE::GetArcBallAngle(glm::vec3 arcBallVec)
 
 void CAD_SCENE::UpdateScene()
 {
+	Camera* cam = this->GetMainCamera();
+
 	this->UpdateScreenProperties();
 	this->UpdateMousePosition();
 	
-	//if we have arc ball control for view enabled:
-	if (viewArcBallOn)
-	{	
-		if (this->GetMainCamera())
-		{
-			glm::vec4 camPositionHomogenous = glm::vec4(this->GetMainCamera()->GetPosition(), 1.0f);
-			glm::vec4 pivotPositionHomogenous = glm::vec4(this->GetMainCamera()->GetTarget(), 1.0f);
+	if (cam)
+	{
+		cam->UpdateCamera();
 
+		//if we have arc ball control for view enabled:
+		if (viewArcBallOn)
+		{
 			double dAngleX = (2.0f * glm::pi<double>()) / (double)screenWidth;
 			double dAngleY = (2.0f * glm::pi<double>()) / (double)screenHeight;
 
 			double xAngle = arcDragVector[0] * dAngleX;
 			double yAngle = arcDragVector[1] * dAngleY;
 
-			double cosAngle = glm::dot(this->GetMainCamera()->GetViewDirection(), { 0.0f, 0.0f, 1.0f });
-			
-			int signDAngle;
-			if (yAngle < 0.0f)
-			{
-				signDAngle = -1;
-			}
-			else if (yAngle == 0.0f)
-			{
-				signDAngle = 0;
-			}
-			else
-			{
-				signDAngle = 1;
-			}
-			
-			if (cosAngle * (double)signDAngle > 0.99f)
-			{
-				dAngleY = 0.0f;
-			}
+			cam->ArcBall(dAngleX, dAngleY, xAngle, yAngle);
 
-			glm::mat4x4 rotationMatrixX(1.0f);
-			rotationMatrixX = glm::rotate(rotationMatrixX, (float)xAngle, { 0.0f, 0.0f, 1.0f });
-
-			camPositionHomogenous = rotationMatrixX * (camPositionHomogenous - pivotPositionHomogenous) + pivotPositionHomogenous;
-
-			glm::mat4x4 rotationMatrixY(1.0f);
-			rotationMatrixY = glm::rotate(rotationMatrixY, (float)yAngle, this->GetMainCamera()->GetCameraRight());
-
-			glm::vec3 finalCameraHomogenous = rotationMatrixY * (camPositionHomogenous - pivotPositionHomogenous) + pivotPositionHomogenous;
-
-			this->GetMainCamera()->SetPosition(finalCameraHomogenous);
+			this->arcClickLastPos[0] = mousePos[0];
+			this->arcClickLastPos[1] = mousePos[1];
 		}
-
-		this->arcClickLastPos[0] = mousePos[0];
-		this->arcClickLastPos[1] = mousePos[1];
 	}
+	
+
 }
 
 void CAD_SCENE::RenderScene()

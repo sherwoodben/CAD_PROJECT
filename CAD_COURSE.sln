@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32526.322
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Curves", "Curves\Curves.vcxproj", "{9D810924-ED13-4A6A-8EE5-A8032850802B}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CAD_Program", "CAD_Program\CAD_Program.vcxproj", "{AF3C2FDB-59E8-4DD1-899D-AE5D081B9E03}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ImGui Headers", "ImGui Headers", "{345C0AD8-0B45-4747-BC6C-2362DC81E0AD}"
@@ -41,14 +39,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Debug|x64.ActiveCfg = Debug|x64
-		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Debug|x64.Build.0 = Debug|x64
-		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Debug|x86.ActiveCfg = Debug|Win32
-		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Debug|x86.Build.0 = Debug|Win32
-		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Release|x64.ActiveCfg = Release|x64
-		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Release|x64.Build.0 = Release|x64
-		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Release|x86.ActiveCfg = Release|Win32
-		{9D810924-ED13-4A6A-8EE5-A8032850802B}.Release|x86.Build.0 = Release|Win32
 		{AF3C2FDB-59E8-4DD1-899D-AE5D081B9E03}.Debug|x64.ActiveCfg = Debug|x64
 		{AF3C2FDB-59E8-4DD1-899D-AE5D081B9E03}.Debug|x64.Build.0 = Debug|x64
 		{AF3C2FDB-59E8-4DD1-899D-AE5D081B9E03}.Debug|x86.ActiveCfg = Debug|Win32

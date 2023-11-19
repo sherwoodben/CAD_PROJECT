@@ -53,7 +53,13 @@ public:
 	glm::vec3 GetCameraRight() { return glm::transpose(this->GetViewMatrix())[0]; };
 	glm::vec3 GetCameraUp() { return this->cameraUp; };
 
-	void UpdateCameraVectors();
+	void ChangeZoom(float zoomDelta);
+
+	void UpdateCamera();
+
+	void ArcBall(double deltaX, double deltaY, double angleX, double angleY);
+
+	float GetViewRadius() { return this->cameraZoom; };
 
 private:
 	//ID to keep track of the camera
@@ -63,21 +69,20 @@ private:
 	glm::vec3 cameraRight = { 1.0f, 0.0f, 0.0f };
 	//"camera up" direction (will change)
 	glm::vec3 cameraUp = { 0.0f, 0.0f, 1.0f };
-	//"camera direction" (will change)
-	glm::vec3 cameraDirection = { 0.0f, -1.0f, 0.0f };
 	float angle = 0.0f;
 
 	//"world up" direction (Z-Up)
 	glm::vec3 worldUp = {0.0f, 0.0f, 1.0f};
 
 	//camera's position
-	glm::vec3 position = { 0.0f, 10.0f, 0.0f };
+	glm::vec3 position = { 0.0f, 1.0f, 0.0f };
 
 	//camera's target
 	glm::vec3 target = { 0.0f, 0.0f, 0.0f };
 
-	//keep track of the camera FOV
+	//keep track of the camera FOV and zoom(s)
 	float FOV = 45.0f;
+	float cameraZoom = 1.0f;
 
 	//keep track of the clipping planes
 	float nearClippingPlane = 0.05f;
