@@ -45,16 +45,47 @@ Axis::Axis(glm::vec3 point1, glm::vec3 point2, bool reverse)
     }
 }
 
+Axis::Axis(const char* basisDirection)
+{
+    this->InitAxis();
+    if (basisDirection == "x" || basisDirection == "X")
+    {
+        this->displayName = "X - Axis";
+        this->axisDirection = { 1.0f, 0.0f, 0.0f };
+        this->isDefaultObject = true;
+        this->SetDebugColor({ 128, 0, 0 });
+        this->SetFlatColor({ 255, 0, 0 });
+    }
+    else if (basisDirection == "y" || basisDirection == "Y")
+    {
+        this->displayName = "Y - Axis";
+        this->axisDirection = { 0.0f, 1.0f, 0.0f };
+        this->isDefaultObject = true;
+        this->SetDebugColor({ 0, 128, 0 });
+        this->SetFlatColor({ 0, 255, 0 });
+    }
+    else if (basisDirection == "z" || basisDirection == "Z")
+    {
+        this->displayName = "Z - Axis";
+        this->axisDirection = { 0.0f, 0.0f, 1.0f };
+        this->isDefaultObject = true;
+        this->SetDebugColor({ 0, 0, 128 });
+        this->SetFlatColor({ 0, 0, 255 });
+    }
+    else
+    {
+        this->displayName = "INVALID AXIS";
+        this->axisDirection = { 0.0f, 0.0f, 0.0f };
+        this->isDefaultObject = true;
+        this->SetDebugColor({ 255, 0, 255 });
+        this->SetFlatColor({ 255, 0, 255 });
+    }
+}
+
 void Axis::RenderObject()
 {
-    //first, bind the VAO:
-    glBindVertexArray(*(this->GetObjectVAOPointer()));
-
-    //now, draw elements (all 6 of them)
-    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
-
-    //unbind the VAO:
-    glBindVertexArray(0);
+    //we have 12 indices (remove hard coded value at some point)
+    this->RenderAsTriangles(12);
 }
 
 glm::mat4 Axis::GetModelMatrix()
@@ -98,38 +129,7 @@ void Axis::InitAxis()
     //and the shader type
     this->SetShaderType(ShaderType::AXIS);
 
-    //generate a VAO for this object:
-    glGenVertexArrays(1, this->GetObjectVAOPointer());
-    //generate a VBO for this object:
-    glGenBuffers(1, this->GetObjectVBOPointer());
-    //generate an EBO for this object:
-    glGenBuffers(1, this->GetObjectEBOPointer());
-
-    //bind the VAO
-    glBindVertexArray(*(this->GetObjectVAOPointer()));
-
-    //bind the VBO
-    glBindBuffer(GL_ARRAY_BUFFER, *(this->GetObjectVBOPointer()));
-    //send axis vertex data to the vertex buffer
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Axis::axisVertices), Axis::axisVertices, GL_STATIC_DRAW);
-
-    //bind the EBO
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *(this->GetObjectEBOPointer()));
-    //send index data to the EBO:
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Axis::axisIndices), Axis::axisIndices, GL_STATIC_DRAW);
-
-    //configure the vertex attribute pointers:
-    //position:
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(GL_FLOAT)));
-    //enable it:
-    glEnableVertexAttribArray(0);
-    //uv coord:
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(GL_FLOAT)));
-    //enable it:
-    glEnableVertexAttribArray(1);
-
-    //unbind the VBO
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    //and the VAO
-    glBindVertexArray(0);
+    //set up all the buffers; axes are defined with 8
+    //vertices and 12 indices (four triangles * three points each)
+    this->SetUpBuffers(Axis::axisVertices, 8, Axis::axisIndices, 12);
 }

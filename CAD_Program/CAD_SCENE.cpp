@@ -22,68 +22,47 @@ CAD_SCENE::~CAD_SCENE()
 
 void CAD_SCENE::LoadDefaultObjects()
 {
+	//SET UP PLANES
+	this->LoadDefaultPlanes();
+
+	//SET UP AXES
+	this->LoadDefaultAxes();
+}
+
+void CAD_SCENE::LoadDefaultPlanes()
+{
 	Plane* tempPlane = nullptr;
 	//load default planes:
 	//	X-Y Plane
-	tempPlane = new Plane({ 0.0f, 0.0f, 1.0f });
-		tempPlane->displayName = "X - Y Plane";
-		tempPlane->isDefaultObject = true;
-		tempPlane->SetDebugColor({ 255, 0, 0});
-		//tempPlane->SetFlatColor({ 255, 192, 192 });
-		//tempPlane->SetObjectScale(10.0f);
-		//tempPlane->SetObjectPosition({ 0.0f, 0.0f, -10.0f });
-	this->AddSceneObject(tempPlane);
-	tempPlane = nullptr;
-	//	Y-Z Plane
-	tempPlane = new Plane({ 1.0f, 0.0f, 0.0f });
-		tempPlane->displayName = "Y - Z Plane";
-		tempPlane->isDefaultObject = true;
-		tempPlane->SetDebugColor({ 0, 255, 0});
-		//tempPlane->SetFlatColor({ 192, 255, 192 });
-		//tempPlane->SetObjectScale(10.0f);
-		//tempPlane->SetObjectPosition({ -10.0f, 0.0f, 0.0f });
+	tempPlane = new Plane("Z");
 	this->AddSceneObject(tempPlane);
 	tempPlane = nullptr;
 	//	X-Z Plane
-	tempPlane = new Plane({ 0.0f, -1.0f, 0.0f });
-		tempPlane->displayName = "X - Z Plane";
-		tempPlane->isDefaultObject = true;
-		tempPlane->SetDebugColor({ 0, 0, 255});
-		//tempPlane->SetFlatColor({ 192, 192, 255 });
-		//tempPlane->SetObjectScale(10.0f);
-		//tempPlane->SetObjectPosition({ 0.0f, -10.0f, 0.0f });
+	tempPlane = new Plane("Y");
 	this->AddSceneObject(tempPlane);
 	tempPlane = nullptr;
+	//	Y-Z Plane
+	tempPlane = new Plane("X");
+	this->AddSceneObject(tempPlane);
+	tempPlane = nullptr;
+}
 
+void CAD_SCENE::LoadDefaultAxes()
+{
 	Axis* tempAxis = nullptr;
 	//load default axes:
 	// X Axis
-	tempAxis = new Axis({ 1.0f, 0.0f, 0.0f });
-		tempAxis->displayName = "X - Axis";
-		tempAxis->isDefaultObject = true;
-		tempAxis->SetDebugColor({ 128, 0, 0 });
-		tempAxis->SetFlatColor({ 255, 0, 0 });
+	tempAxis = new Axis("X");
 	this->AddSceneObject(tempAxis);
 	tempAxis = nullptr;
 	// Y Axis
-	tempAxis = new Axis({ 0.0f, 1.0f, 0.0f });
-	tempAxis->displayName = "Y - Axis";
-	tempAxis->isDefaultObject = true;
-	tempAxis->SetDebugColor({ 0, 128, 0 });
-	tempAxis->SetFlatColor({ 0, 255, 0 });
+	tempAxis = new Axis("Y");
 	this->AddSceneObject(tempAxis);
 	tempAxis = nullptr;
 	// Z Axis
-	tempAxis = new Axis({ 0.0f, 0.0f, 1.0f });
-	tempAxis->displayName = "Z - Axis";
-	tempAxis->isDefaultObject = true;
-	tempAxis->SetDebugColor({ 0, 0, 128 });
-	tempAxis->SetFlatColor({ 0, 0, 255 });
+	tempAxis = new Axis("Z");
 	this->AddSceneObject(tempAxis);
 	tempAxis = nullptr;
-
-	//add the default camera to the scene
-	this->AddSceneCamera();
 }
 
 void CAD_SCENE::AddSceneObject(SceneObject* objectToAdd)
@@ -91,17 +70,16 @@ void CAD_SCENE::AddSceneObject(SceneObject* objectToAdd)
 	this->sceneObjects.push_back(objectToAdd);
 }
 
-void CAD_SCENE::AddSceneCamera()
+void CAD_SCENE::SetCameraView(Camera::DefinedView desiredView)
 {
-	//add a camera to the scene
-	this->sceneCameras.push_back(new Camera(cameraIterator));
-
-	if (cameraIterator == 0)
+	if (desiredView == Camera::DefinedView::SAVED)
 	{
-		this->SetMainCamera(this->sceneCameras[cameraIterator]);
+		this->GetCamera()->GoToDefinedView(desiredView, this->sceneState.SavedCamera);
 	}
-	//increment the counter to ensure unique IDs
-	this->cameraIterator++;
+	else
+	{
+		this->GetCamera()->GoToDefinedView(desiredView);
+	}
 }
 
 void CAD_SCENE::CloseScene()
@@ -129,9 +107,9 @@ void CAD_SCENE::ProcessMessage(Message msg)
 
 		float zoomDelta = std::stof(msg.messageData);
 
-		if (this->GetMainCamera())
+		if (this->GetCamera())
 		{
-			this->GetMainCamera()->ChangeZoom(zoomDelta);
+			this->GetCamera()->ChangeZoom(zoomDelta);
 		}
 	}
 
@@ -164,7 +142,7 @@ void CAD_SCENE::UpdateScreenProperties()
 
 void CAD_SCENE::UpdateScene()
 {
-	Camera* cam = this->GetMainCamera();
+	Camera* cam = this->GetCamera();
 
 	this->UpdateScreenProperties();
 	this->UpdateMousePosition();
@@ -201,148 +179,145 @@ void CAD_SCENE::RenderScene()
 	// draw in wireframe
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	//set the clear color
-	glClearColor(0.85f, 0.85f, 0.85f, 1.0f);
+	glClearColor(0.15f, 0.15f, 0.25f, 1.0f);
 	//clear the window
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//get the active camera, and get the "projection
 	//matrix" and "view matrix" from that camera:
-	//(but only do this if a camera exists!)
-	if (!this->sceneCameras.empty())
+	
+	//first the projection matrix
+	glm::mat4 projectionMatrix = this->GetCamera()->GetProjectionMatrix(this->GetAspectRatio());
+	//and get the view matrix
+	glm::mat4 viewMatrix = this->GetCamera()->GetViewMatrix();
+
+	//update the uniforms for the shader with the camera matrices
+	this->GetShader()->setMat4("projection", projectionMatrix);
+	this->GetShader()->setMat4("view", viewMatrix);
+
+	std::vector<SceneObject*> objectsWithTransparency;
+
+	//now, loop through the SceneObjects
+	//and render them
+	for (SceneObject* sO : this->GetSceneObjects())
 	{
-		//first the projection matrix
-		glm::mat4 projectionMatrix = this->GetMainCamera()->GetProjectionMatrix(this->GetAspectRatio());
-		//and get the view matrix
-		glm::mat4 viewMatrix = this->GetMainCamera()->GetViewMatrix();
-
-		//update the uniforms for the shader with the camera matrices
-		this->GetShader()->setMat4("projection", projectionMatrix);
-		this->GetShader()->setMat4("view", viewMatrix);
-
-		std::vector<SceneObject*> objectsWithTransparency;
-
-		//now, loop through the SceneObjects
-		//and render them
-		for (SceneObject* sO : this->GetSceneObjects())
+		//only do this if the object is visible:
+		if (!sO->isVisible)
 		{
-			//only do this if the object is visible:
-			if (!sO->isVisible)
-			{
-				continue;
-			}
-			//if the object has transparency, add that to the list so we can do them second:
-			if (sO->GetIsTransparent())
-			{
-				objectsWithTransparency.push_back(sO);
-				continue;
-			}
-			//update the -per model- uniforms (i.e.
-			//model matrices, colors, etc.)
-			//first get the model matrix:
-			glm::mat4 modelMatrix = sO->GetModelMatrix();
-			//then update the shader
-			this->GetShader()->setMat4("model", modelMatrix);
-
-			//get the R G B and A components of the debug color
-			//of the model
-			float r = (float)sO->GetDebugColor().r;
-			float g = (float)sO->GetDebugColor().g;
-			float b = (float)sO->GetDebugColor().b;
-			float a = (float)sO->GetDebugColor().a;
-			//scale them to be between 0 and 1 (divide by 255)
-			r /= 255.0f;
-			g /= 255.0f;
-			b /= 255.0f;
-			a /= 255.0f;
-			//now, make  the color a vec4
-			glm::vec4 debugColor = glm::vec4(r, g, b, a);
-			//next, do the debug color to test things
-			this->GetShader()->setVec4("debugColor", debugColor);
-
-			//do the same for the flat color (wow, this is a pain! maybe I should fix that.)
-			r = (float)sO->GetFlatColor().r;
-			g = (float)sO->GetFlatColor().g;
-			b = (float)sO->GetFlatColor().b;
-			a = (float)sO->GetFlatColor().a;
-			//scale them to be between 0 and 1 (divide by 255)
-			r /= 255.0f;
-			g /= 255.0f;
-			b /= 255.0f;
-			a /= 255.0f;
-			//now, make  the color a vec4
-			glm::vec4 flatColor = glm::vec4(r, g, b, a);
-			//update the flat color uniform
-			this->GetShader()->setVec4("flatColor", flatColor);
-
-			//next, update the shader based on the object type:
-			this->GetShader()->setInt("shaderType", sO->GetShaderType());
-			//then render the object
-			sO->RenderObject();
+			continue;
 		}
-
-		//start of transparencies; turn off depth mask
-		glDepthMask(false);
-
-		//now do that whole loop for objects with transparency: hint-- should turn this into a
-		//function or something!
-		for (SceneObject* sO : objectsWithTransparency)
+		//if the object has transparency, add that to the list so we can do them second:
+		if (sO->GetIsTransparent())
 		{
-			//only do this if the object is visible:
-			if (!sO->isVisible)
-			{
-				continue;
-			}
-
-			//update the -per model- uniforms (i.e.
-			//model matrices, colors, etc.)
-			//first get the model matrix:
-			glm::mat4 modelMatrix = sO->GetModelMatrix();
-			//then update the shader
-			this->GetShader()->setMat4("model", modelMatrix);
-
-			//get the R G B and A components of the debug color
-			//of the model
-			float r = (float)sO->GetDebugColor().r;
-			float g = (float)sO->GetDebugColor().g;
-			float b = (float)sO->GetDebugColor().b;
-			float a = (float)sO->GetDebugColor().a;
-			//scale them to be between 0 and 1 (divide by 255)
-			r /= 255.0f;
-			g /= 255.0f;
-			b /= 255.0f;
-			a /= 255.0f;
-			//now, make  the color a vec4
-			glm::vec4 debugColor = glm::vec4(r, g, b, a);
-			//next, do the debug color to test things
-			this->GetShader()->setVec4("debugColor", debugColor);
-
-			//do the same for the flat color (wow, this is a pain! maybe I should fix that.)
-			r = (float)sO->GetFlatColor().r;
-			g = (float)sO->GetFlatColor().g;
-			b = (float)sO->GetFlatColor().b;
-			a = (float)sO->GetFlatColor().a;
-			//scale them to be between 0 and 1 (divide by 255)
-			r /= 255.0f;
-			g /= 255.0f;
-			b /= 255.0f;
-			a /= 255.0f;
-			//now, make  the color a vec4
-			glm::vec4 flatColor = glm::vec4(r, g, b, a);
-			//update the flat color uniform
-			this->GetShader()->setVec4("flatColor", flatColor);
-
-			//next, update the shader based on the object type:
-			this->GetShader()->setInt("shaderType", sO->GetShaderType());
-			//then render the object
-			sO->RenderObject();
+			objectsWithTransparency.push_back(sO);
+			continue;
 		}
+		//update the -per model- uniforms (i.e.
+		//model matrices, colors, etc.)
+		//first get the model matrix:
+		glm::mat4 modelMatrix = sO->GetModelMatrix();
+		//then update the shader
+		this->GetShader()->setMat4("model", modelMatrix);
 
-		//done with transparencies; turn on depth mask again
-		glDepthMask(true);
-		
+		//get the R G B and A components of the debug color
+		//of the model
+		float r = (float)sO->GetDebugColor().r;
+		float g = (float)sO->GetDebugColor().g;
+		float b = (float)sO->GetDebugColor().b;
+		float a = (float)sO->GetDebugColor().a;
+		//scale them to be between 0 and 1 (divide by 255)
+		r /= 255.0f;
+		g /= 255.0f;
+		b /= 255.0f;
+		a /= 255.0f;
+		//now, make  the color a vec4
+		glm::vec4 debugColor = glm::vec4(r, g, b, a);
+		//next, do the debug color to test things
+		this->GetShader()->setVec4("debugColor", debugColor);
 
-		//std::cout << glGetError() << std::endl;
+		//do the same for the flat color (wow, this is a pain! maybe I should fix that.)
+		r = (float)sO->GetFlatColor().r;
+		g = (float)sO->GetFlatColor().g;
+		b = (float)sO->GetFlatColor().b;
+		a = (float)sO->GetFlatColor().a;
+		//scale them to be between 0 and 1 (divide by 255)
+		r /= 255.0f;
+		g /= 255.0f;
+		b /= 255.0f;
+		a /= 255.0f;
+		//now, make  the color a vec4
+		glm::vec4 flatColor = glm::vec4(r, g, b, a);
+		//update the flat color uniform
+		this->GetShader()->setVec4("flatColor", flatColor);
+
+		//next, update the shader based on the object type:
+		this->GetShader()->setInt("shaderType", sO->GetShaderType());
+		//then render the object
+		sO->RenderObject();
 	}
+
+	//start of transparencies; turn off depth mask
+	glDepthMask(false);
+
+	//now do that whole loop for objects with transparency: hint-- should turn this into a
+	//function or something!
+	for (SceneObject* sO : objectsWithTransparency)
+	{
+		//only do this if the object is visible:
+		if (!sO->isVisible)
+		{
+			continue;
+		}
+
+		//update the -per model- uniforms (i.e.
+		//model matrices, colors, etc.)
+		//first get the model matrix:
+		glm::mat4 modelMatrix = sO->GetModelMatrix();
+		//then update the shader
+		this->GetShader()->setMat4("model", modelMatrix);
+
+		//get the R G B and A components of the debug color
+		//of the model
+		float r = (float)sO->GetDebugColor().r;
+		float g = (float)sO->GetDebugColor().g;
+		float b = (float)sO->GetDebugColor().b;
+		float a = (float)sO->GetDebugColor().a;
+		//scale them to be between 0 and 1 (divide by 255)
+		r /= 255.0f;
+		g /= 255.0f;
+		b /= 255.0f;
+		a /= 255.0f;
+		//now, make  the color a vec4
+		glm::vec4 debugColor = glm::vec4(r, g, b, a);
+		//next, do the debug color to test things
+		this->GetShader()->setVec4("debugColor", debugColor);
+
+		//do the same for the flat color (wow, this is a pain! maybe I should fix that.)
+		r = (float)sO->GetFlatColor().r;
+		g = (float)sO->GetFlatColor().g;
+		b = (float)sO->GetFlatColor().b;
+		a = (float)sO->GetFlatColor().a;
+		//scale them to be between 0 and 1 (divide by 255)
+		r /= 255.0f;
+		g /= 255.0f;
+		b /= 255.0f;
+		a /= 255.0f;
+		//now, make  the color a vec4
+		glm::vec4 flatColor = glm::vec4(r, g, b, a);
+		//update the flat color uniform
+		this->GetShader()->setVec4("flatColor", flatColor);
+
+		//next, update the shader based on the object type:
+		this->GetShader()->setInt("shaderType", sO->GetShaderType());
+		//then render the object
+		sO->RenderObject();
+	}
+
+	//done with transparencies; turn on depth mask again
+	glDepthMask(true);
+	
+
+	//std::cout << glGetError() << std::endl;
 	
 
 	

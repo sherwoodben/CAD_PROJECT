@@ -29,6 +29,17 @@ struct SceneState
 
 	double MousePos[2] = { 0.0f, 0.0f };
 
+	bool WireFrameMode = false;
+	bool DebugVisualsMode = false;
+
+	//Maybe add the camera here? Could make
+	//things more "compact"
+
+	Camera SceneCamera = Camera();
+	CameraState SavedCamera = CameraState();
+
+	bool SceneUpToDate = true;
+
 };
 
 class CAD_SCENE
@@ -47,18 +58,20 @@ public:
 	void SetShader(Shader* shader) { this->sceneShader = shader; };
 
 	void LoadDefaultObjects();
+	void LoadDefaultPlanes();
+	void LoadDefaultAxes();
+
 	void AddSceneObject(SceneObject* objectToAdd);
 	std::vector<SceneObject*> GetSceneObjects() { return this->sceneObjects; };
 
-	void SetMainCamera(Camera* camera) { this->mainCamera = camera; };
-	std::vector<Camera*> GetSceneCameras() { return this->sceneCameras; };
-	Camera* GetMainCamera() { return this->mainCamera; };
-	void AddSceneCamera();
+	void SetCameraView(Camera::DefinedView desiredView);
+	void SaveCameraView() { this->sceneState.SavedCamera = this->GetCamera()->GetCameraState(); };
+	Camera* GetCamera() { return &this->sceneState.SceneCamera; };
 
 	void SetAspectRatio(float newAspectRatio) { this->sceneState.ScreenAspectRatio = newAspectRatio; };
 	float GetAspectRatio() { return this->sceneState.ScreenAspectRatio; };
 
-	bool HasUnsavedChanges() { return !this->upToDate; }
+	bool HasChanges() { return !this->upToDate; }
 
 	void ProcessMessage(Message msg);
 
@@ -79,9 +92,6 @@ private:
 	//a vector to keep track of SceneObjects
 	std::vector<SceneObject*> sceneObjects;
 
-	//a vector to keep track of SceneCameras
-	std::vector<Camera*> sceneCameras;
-	Camera* mainCamera = nullptr;
 	//a value we'll increment every time we add
 	//a camera to generate a "unique ID"
 	unsigned int cameraIterator = 0;

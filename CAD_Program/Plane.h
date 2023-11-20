@@ -11,6 +11,10 @@ public:
 	//will pass an array of floats representing
 	//the normal vector components
 	Plane(glm::vec3 planeNormal);
+
+	//default planes defined by two character
+	//representing the normal direction
+	Plane(const char* basisDirection);
 	~Plane() {};
 
 	void RenderObject();
@@ -35,5 +39,7 @@ private:
 	//indices of vertex that make
 	//two triangles (a quad)
 	static unsigned int planeIndices[];
+
+	void InitPlane();
 
 };

@@ -1,5 +1,7 @@
 #include "Camera.h"
 
+
+
 glm::mat4 Camera::GetProjectionMatrix(float window_aspect_ratio)
 {
 	//if we're not in orthographic mode
@@ -47,6 +49,37 @@ glm::mat4 Camera::GetProjectionMatrix(float window_aspect_ratio)
 			this->GetFarClippingPlane());
 	}
     
+}
+
+void Camera::GoToDefinedView(Camera::DefinedView desiredView, CameraState savedCamera)
+{
+	switch (desiredView)
+	{
+	case Camera::FRONT:
+		this->cameraState = CameraState();
+		break;
+	case Camera::RIGHT:
+		this->cameraState = CameraState();
+		break;
+	case Camera::TOP:
+		this->cameraState = CameraState();
+		break;
+	case Camera::BACK:
+		this->cameraState = CameraState();
+		break;
+	case Camera::LEFT:
+		this->cameraState = CameraState();
+		break;
+	case Camera::BOTTOM:
+		this->cameraState = CameraState();
+		break;
+	case Camera::SAVED:
+		this->cameraState = savedCamera;
+		break;
+	default:
+		this->cameraState = CameraState();
+		break;
+	}
 }
 
 void Camera::ChangeZoom(float zoomDelta)

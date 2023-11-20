@@ -8,6 +8,9 @@ public:
 	//Axis is defined by two points:
 	Axis(glm::vec3 point1, glm::vec3 point2, bool reverse);
 
+	//Axis defined by 'X' 'Y' or 'Z'
+	Axis(const char* basisDirection);
+
 	//destructor
 	~Axis() {};
 

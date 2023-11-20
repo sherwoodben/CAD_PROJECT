@@ -8,15 +8,13 @@
 //struct to store the camera state
 struct CameraState
 {
-	int cameraID = -1;
-
 	bool cameraIsOrthographic = false;
 
 	glm::vec3 cameraTarget = {0.0f, 0.0f, 0.0f};
-	glm::vec3 cameraRight = { 0.0f, 1.0f, 0.0f };
+	glm::vec3 cameraRight = { 1.0f, 0.0f, 0.0f };
 	glm::vec3 cameraUp = { 0.0f, 0.0f, 1.0f };
 
-	glm::vec3 cameraPosition = {5.0f, 0.0f, 0.0f};
+	glm::vec3 cameraPosition = {0.0f, -5.0f, 0.0f};
 
 	float cameraFOV = 45.0f;
 	float cameraZoom = 1.0f;
@@ -25,14 +23,28 @@ struct CameraState
 	
 };
 
+
+
 //a camera is a simple thing; it should have a position; a
 //projection mode (perspective or orthographic); a "world
 //up" direction; a target position; a local uo direction
 class Camera
 {
 public:
-	//constructor; takes an int as a "unique ID"
-	Camera(unsigned int assignedID) { this->cameraState.cameraID = assignedID; };
+
+	enum DefinedView
+	{
+		FRONT,
+		RIGHT,
+		TOP,
+		BACK,
+		LEFT,
+		BOTTOM,
+		SAVED
+	};
+
+	//constructor;
+	Camera() {};
 
 	//set a new target for the camera
 	void SetTarget(glm::vec3 newTarget) { this->cameraState.cameraTarget = newTarget; };
@@ -44,6 +56,9 @@ public:
 	//return the view matrix
 	glm::mat4 GetViewMatrix() { return glm::lookAt(this->cameraState.cameraPosition, this->cameraState.cameraTarget, this->cameraState.cameraUp); };
 	glm::vec3 GetViewDirection() { return -glm::transpose(this->GetViewMatrix())[2]; };
+
+	//set the camera to a predefined view
+	void GoToDefinedView(Camera::DefinedView desiredView, CameraState savedCamera = CameraState());
 
 
 	//perspective mode toggles/switches
@@ -59,9 +74,6 @@ public:
 	//get information about the camera FOV:
 	float GetFOV() { return this->cameraState.cameraFOV; };
 	void SetFOV(float newFOV) { this->cameraState.cameraFOV = newFOV; };
-	
-	//function to get the ID:
-	unsigned int GetID() { return this->cameraState.cameraID; };
 
 	//get and set the positions
 	void SetPosition(glm::vec3 newPos) { this->cameraState.cameraPosition = newPos; };
@@ -80,6 +92,8 @@ public:
 	void ArcBall(double angleX, double angleY);
 
 	float GetViewRadius() { return this->cameraState.cameraZoom; };
+
+	CameraState GetCameraState() { return this->cameraState; };
 
 private:
 	//we need to keep track of the camera state

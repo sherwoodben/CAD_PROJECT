@@ -1,5 +1,7 @@
 #include "CAD_APP.h"
 
+#include "Camera.h"
+
 MessageManager CAD_APP::messageManager = MessageManager();
 
 void CAD_APP::RegisterCallbacks()
@@ -250,33 +252,41 @@ void CAD_APP::RenderGUI()
 {
 	//render Dear ImGUI GUI
 	//begin a test window -- will eventually become
-	//the "scene tree"
+	//the "scene tree" --bit of a misnomer for now
 	ImGui::Begin("Scene Tree:");
 
-	//first, display the current camera
-	std::string camText = "Camera ";
-	camText.append(std::to_string(this->GetCurrentScene()->GetMainCamera()->GetID()));
-	ImGui::Text(camText.c_str());
-	ImGui::SameLine();
-	if (this->GetCurrentScene()->GetMainCamera()->GetOrthographicMode() == true)
+	//first, display the camera options
+	if (this->GetCurrentScene()->GetCamera()->GetOrthographicMode() == true)
 	{
 		if (ImGui::Button("Toggle Perspective"))
 		{
-			this->GetCurrentScene()->GetMainCamera()->SetPerspectiveMode();
+			this->GetCurrentScene()->GetCamera()->SetPerspectiveMode();
 		}
 	}
-	else if (this->GetCurrentScene()->GetMainCamera()->GetOrthographicMode() == false)
+	else if (this->GetCurrentScene()->GetCamera()->GetOrthographicMode() == false)
 	{
 		if (ImGui::Button("Toggle Orthographic"))
 		{
-			this->GetCurrentScene()->GetMainCamera()->SetOrthographicMode();
+			this->GetCurrentScene()->GetCamera()->SetOrthographicMode();
 		}
 	}
+	if (ImGui::Button("Reset Camera"))
+	{
+		this->GetCurrentScene()->SetCameraView(Camera::DefinedView::FRONT);
+	}
+	if (ImGui::Button("Save Camera View"))
+	{
+		this->GetCurrentScene()->SaveCameraView();
+	}
+	if (ImGui::Button("Load Camera View"))
+	{
+		this->GetCurrentScene()->SetCameraView(Camera::DefinedView::SAVED);
+	}
 	
-	float camPos[3] = { this->GetCurrentScene()->GetMainCamera()->GetPosition().x, this->GetCurrentScene()->GetMainCamera()->GetPosition().y, this->GetCurrentScene()->GetMainCamera()->GetPosition().z};
-	float fov = this->GetCurrentScene()->GetMainCamera()->GetFOV();
-	ImGui::InputFloat3("(X, Y, Z)", camPos);
-	ImGui::InputFloat("FOV:", &fov, 2.5f, 45.0f);
+	//float camPos[3] = { this->GetCurrentScene()->GetCamera()->GetPosition().x, this->GetCurrentScene()->GetCamera()->GetPosition().y, this->GetCurrentScene()->GetCamera()->GetPosition().z};
+	//float fov = this->GetCurrentScene()->GetCamera()->GetFOV();
+	//ImGui::InputFloat3("(X, Y, Z)", camPos);
+	//ImGui::InputFloat("FOV:", &fov, 2.5f, 45.0f);
 	bool test;
 	if(ImGui::RadioButton("Test", &test))
 	{
@@ -286,10 +296,10 @@ void CAD_APP::RenderGUI()
 	if (ImGui::DragFloat("Test 2", &testing))
 	{
 		//uhhhhhhhhhhhhhh
-		glm::vec3 up = this->GetCurrentScene()->GetMainCamera()->GetCameraUp();
+		glm::vec3 up = this->GetCurrentScene()->GetCamera()->GetCameraUp();
 	};
-	this->GetCurrentScene()->GetMainCamera()->SetPosition({ camPos[0], camPos[1], camPos[2]});
-	this->GetCurrentScene()->GetMainCamera()->SetFOV(fov);
+	//this->GetCurrentScene()->GetCamera()->SetPosition({ camPos[0], camPos[1], camPos[2]});
+	//this->GetCurrentScene()->GetCamera()->SetFOV(fov);
 
 
 	//then list the objects
@@ -339,7 +349,7 @@ bool CAD_APP::LoadSceneFromFile(std::string scenePath)
 	if (this->currentScene)
 	{
 		//check if current scene needs to be saved:
-		if (this->currentScene->HasUnsavedChanges())
+		if (this->currentScene->HasChanges())
 		{
 			//implement this later
 		}

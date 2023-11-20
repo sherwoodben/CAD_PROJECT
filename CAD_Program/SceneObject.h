@@ -50,6 +50,7 @@ public:
 	//object; each type of object will implement
 	//a different method of rendering
 	virtual void RenderObject() {};
+	void RenderAsTriangles(unsigned int numIndices);
 
 	//virtual function that deletes an object (if
 	//that's allowed); different objects will implement
@@ -62,6 +63,9 @@ public:
 	unsigned int* GetObjectVAOPointer() { return &this->VAO; };
 	//we need a way to retrieve the EBO (ID)
 	unsigned int* GetObjectEBOPointer() { return &this->EBO; };
+
+	//most objects reuse similar "setup" code
+	void SetUpBuffers(float* vertexArray, unsigned int numVertices, unsigned int* indexArray, unsigned int numIndices);
 
 	//gets the model matrix of the object
 	virtual glm::mat4 GetModelMatrix();
