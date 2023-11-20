@@ -26,31 +26,61 @@ void CAD_SCENE::LoadDefaultObjects()
 	//load default planes:
 	//	X-Y Plane
 	tempPlane = new Plane({ 0.0f, 0.0f, 1.0f });
-	tempPlane->displayName = "X - Y Plane";
-	tempPlane->isDefaultObject = true;
-	tempPlane->SetDebugColor({ 255, 0, 0});
-	tempPlane->SetFlatColor({ 255, 192, 192 });
-	tempPlane->SetObjectScale(10.0f);
+		tempPlane->displayName = "X - Y Plane";
+		tempPlane->isDefaultObject = true;
+		tempPlane->SetDebugColor({ 255, 0, 0});
+		//tempPlane->SetFlatColor({ 255, 192, 192 });
+		//tempPlane->SetObjectScale(10.0f);
+		//tempPlane->SetObjectPosition({ 0.0f, 0.0f, -10.0f });
 	this->AddSceneObject(tempPlane);
 	tempPlane = nullptr;
 	//	Y-Z Plane
 	tempPlane = new Plane({ 1.0f, 0.0f, 0.0f });
-	tempPlane->displayName = "Y - Z Plane";
-	tempPlane->isDefaultObject = true;
-	tempPlane->SetDebugColor({ 0, 255, 0});
-	tempPlane->SetFlatColor({ 192, 255, 192 });
-	tempPlane->SetObjectScale(10.0f);
+		tempPlane->displayName = "Y - Z Plane";
+		tempPlane->isDefaultObject = true;
+		tempPlane->SetDebugColor({ 0, 255, 0});
+		//tempPlane->SetFlatColor({ 192, 255, 192 });
+		//tempPlane->SetObjectScale(10.0f);
+		//tempPlane->SetObjectPosition({ -10.0f, 0.0f, 0.0f });
 	this->AddSceneObject(tempPlane);
 	tempPlane = nullptr;
 	//	X-Z Plane
 	tempPlane = new Plane({ 0.0f, -1.0f, 0.0f });
-	tempPlane->displayName = "X - Z Plane";
-	tempPlane->isDefaultObject = true;
-	tempPlane->SetDebugColor({ 0, 0, 255});
-	tempPlane->SetFlatColor({ 192, 192, 255 });
-	tempPlane->SetObjectScale(10.0f);
+		tempPlane->displayName = "X - Z Plane";
+		tempPlane->isDefaultObject = true;
+		tempPlane->SetDebugColor({ 0, 0, 255});
+		//tempPlane->SetFlatColor({ 192, 192, 255 });
+		//tempPlane->SetObjectScale(10.0f);
+		//tempPlane->SetObjectPosition({ 0.0f, -10.0f, 0.0f });
 	this->AddSceneObject(tempPlane);
 	tempPlane = nullptr;
+
+	Axis* tempAxis = nullptr;
+	//load default axes:
+	// X Axis
+	tempAxis = new Axis({ 1.0f, 0.0f, 0.0f });
+		tempAxis->displayName = "X - Axis";
+		tempAxis->isDefaultObject = true;
+		tempAxis->SetDebugColor({ 128, 0, 0 });
+		tempAxis->SetFlatColor({ 255, 0, 0 });
+	this->AddSceneObject(tempAxis);
+	tempAxis = nullptr;
+	// Y Axis
+	tempAxis = new Axis({ 0.0f, 1.0f, 0.0f });
+	tempAxis->displayName = "Y - Axis";
+	tempAxis->isDefaultObject = true;
+	tempAxis->SetDebugColor({ 0, 128, 0 });
+	tempAxis->SetFlatColor({ 0, 255, 0 });
+	this->AddSceneObject(tempAxis);
+	tempAxis = nullptr;
+	// Z Axis
+	tempAxis = new Axis({ 0.0f, 0.0f, 1.0f });
+	tempAxis->displayName = "Z - Axis";
+	tempAxis->isDefaultObject = true;
+	tempAxis->SetDebugColor({ 0, 0, 128 });
+	tempAxis->SetFlatColor({ 0, 0, 255 });
+	this->AddSceneObject(tempAxis);
+	tempAxis = nullptr;
 
 	//add the default camera to the scene
 	this->AddSceneCamera();
@@ -86,10 +116,10 @@ void CAD_SCENE::ProcessMessage(Message msg)
 	//Middle mouse toggles the arc ball for manipulating the view
 	if (msg.messageType == "M_MOUSE")
 	{
-		viewArcBallOn = (msg.messageData == "PRESSED");
+		this->sceneState.ArcBallMode = (msg.messageData == "PRESSED");
 
-		arcClickLastPos[0] = mousePos[0];
-		arcClickLastPos[1] = mousePos[1];
+		this->sceneState.LastArcClick[0] = this->sceneState.MousePos[0];
+		this->sceneState.LastArcClick[1] = this->sceneState.MousePos[1];
 	}
 
 	//mouse when scroll zooms in and out
@@ -110,48 +140,26 @@ void CAD_SCENE::ProcessMessage(Message msg)
 
 void CAD_SCENE::UpdateMousePosition()
 {
-	glfwGetCursorPos(glfwGetCurrentContext(), &mousePos[0], &mousePos[1]);
-	mousePos[0] = std::min(mousePos[0], (double)screenWidth);
-	mousePos[1] = std::min(mousePos[1], (double)screenHeight);
+	glfwGetCursorPos(glfwGetCurrentContext(), &this->sceneState.MousePos[0], &this->sceneState.MousePos[1]);
+	this->sceneState.MousePos[0] = std::min(this->sceneState.MousePos[0], (double)this->sceneState.ScreenDimensions[0]);
+	this->sceneState.MousePos[0] = std::max(this->sceneState.MousePos[0], (double)0.0f);
+	this->sceneState.MousePos[1] = std::min(this->sceneState.MousePos[1], (double)this->sceneState.ScreenDimensions[1]);
+	this->sceneState.MousePos[1] = std::max(this->sceneState.MousePos[1], (double)0.0f);
 
-	if (viewArcBallOn)
+	if (this->sceneState.ArcBallMode)
 	{
+		this->sceneState.ArcDragVector[0] = this->sceneState.LastArcClick[0] - this->sceneState.MousePos[0];
+		this->sceneState.ArcDragVector[1] = this->sceneState.LastArcClick[1] - this->sceneState.MousePos[1];
 
-		arcDragVector[0] = arcClickLastPos[0] - mousePos[0];
-		arcDragVector[1] = arcClickLastPos[1] - mousePos[1];
+		this->sceneState.LastArcClick[0] = this->sceneState.MousePos[0];
+		this->sceneState.LastArcClick[1] = this->sceneState.MousePos[1];
 	}
 }
 
 void CAD_SCENE::UpdateScreenProperties()
 {
-	glfwGetWindowSize(glfwGetCurrentContext(), &screenWidth, &screenHeight);
-	this->SetAspectRatio((float)screenWidth / (float)screenHeight);
-}
-
-glm::vec3 CAD_SCENE::GetArcBallVec(double* mousePos)
-{
-	glm::vec3 ballPoint = glm::vec3(
-			(mousePos[0] / ((2.0f) * (double)screenWidth)) - 1.0f,
-			-1.0f*((mousePos[1] / ((2.0f) * (double)screenHeight)) - 1.0f),
-			0.0f);
-	double distToBallCenter = ballPoint.x * ballPoint.x + ballPoint.y * ballPoint.y;
-
-	if (distToBallCenter <= 1.0f)
-	{
-		ballPoint.z = sqrt(1.0f - distToBallCenter);
-	}
-	else
-	{
-		ballPoint = glm::normalize(ballPoint);
-	}
-
-	return ballPoint;
-}
-
-double CAD_SCENE::GetArcBallAngle(glm::vec3 arcBallVec)
-{
-	glm::vec3 originalVec = GetArcBallVec(arcClickLastPos);
-	return acos(std::min(1.0f, glm::dot(originalVec, arcBallVec)));
+	glfwGetWindowSize(glfwGetCurrentContext(), &this->sceneState.ScreenDimensions[0], &this->sceneState.ScreenDimensions[1]);
+	this->sceneState.ScreenAspectRatio = ((float)this->sceneState.ScreenDimensions[0] / (float)this->sceneState.ScreenDimensions[1]);
 }
 
 void CAD_SCENE::UpdateScene()
@@ -166,18 +174,15 @@ void CAD_SCENE::UpdateScene()
 		cam->UpdateCamera();
 
 		//if we have arc ball control for view enabled:
-		if (viewArcBallOn)
+		if (this->sceneState.ArcBallMode)
 		{
-			double dAngleX = (2.0f * glm::pi<double>()) / (double)screenWidth;
-			double dAngleY = (2.0f * glm::pi<double>()) / (double)screenHeight;
+			double dAngleX = (2.0f * glm::pi<double>()) / (double)this->sceneState.ScreenDimensions[0];
+			double dAngleY = (2.0f * glm::pi<double>()) / (double)this->sceneState.ScreenDimensions[1];
 
-			double xAngle = arcDragVector[0] * dAngleX;
-			double yAngle = arcDragVector[1] * dAngleY;
+			double xAngle = -this->sceneState.ArcDragVector[0] * dAngleX;
+			double yAngle = -this->sceneState.ArcDragVector[1] * dAngleY;
 
-			cam->ArcBall(dAngleX, dAngleY, xAngle, yAngle);
-
-			this->arcClickLastPos[0] = mousePos[0];
-			this->arcClickLastPos[1] = mousePos[1];
+			cam->ArcBall(xAngle, yAngle);
 		}
 	}
 	
@@ -196,7 +201,7 @@ void CAD_SCENE::RenderScene()
 	// draw in wireframe
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	//set the clear color
-	glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
+	glClearColor(0.85f, 0.85f, 0.85f, 1.0f);
 	//clear the window
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

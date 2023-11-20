@@ -3,7 +3,7 @@
 glm::mat4 Camera::GetProjectionMatrix(float window_aspect_ratio)
 {
 	//if we're not in orthographic mode
-	if (!this->orthographicMode)
+	if (!this->GetOrthographicMode())
 	{
 		//return the perspective matrix
 		return glm::perspective(glm::radians(this->GetFOV()), window_aspect_ratio, this->GetNearClippingPlane(), this->GetFarClippingPlane());
@@ -38,113 +38,91 @@ glm::mat4 Camera::GetProjectionMatrix(float window_aspect_ratio)
 			
 		}
 		
-
 		//then return the orthographic matrix
-		return glm::ortho(left * this->cameraZoom, right * this->cameraZoom, top * this->cameraZoom, bottom * this->cameraZoom, this->GetNearClippingPlane(), this->GetFarClippingPlane());
+		return glm::ortho(left * this->GetViewRadius(),
+			right * this->GetViewRadius(),
+			top * this->GetViewRadius(),
+			bottom* this->GetViewRadius(),
+			this->GetNearClippingPlane(),
+			this->GetFarClippingPlane());
 	}
     
 }
 
 void Camera::ChangeZoom(float zoomDelta)
 {
-	if (!this->orthographicMode)
+	if (!this->GetOrthographicMode())
 	{
-		this->cameraZoom += zoomDelta * 0.125 * this->cameraZoom;
+		this->cameraState.cameraZoom += zoomDelta * 0.125 * this->GetViewRadius();
 	}
 	else
 	{
-		this->cameraZoom += zoomDelta * 0.025 * this->cameraZoom;
+		this->cameraState.cameraZoom += zoomDelta * 0.025 * this->GetViewRadius();
 	}
-
-	this->UpdateCamera();
-
 }
 
 void Camera::UpdateCamera()
 {
 	glm::vec3 newCameraPos = this->GetPosition();
 	
-	if (!this->orthographicMode)
+	if (!this->GetOrthographicMode())
 	{
-		if (this->cameraZoom > 100.0f)
+		if (this->GetViewRadius() > 10.0f)
 		{
-			this->cameraZoom = 100.0f;
+			this->cameraState.cameraZoom = 10.0f;
 		}
-		else if (this->cameraZoom < 0.25f)
+		else if (this->GetViewRadius() < 0.25f)
 		{
-			this->cameraZoom = 0.25f;
+			this->cameraState.cameraZoom = 0.25f;
 		}
 		
 		newCameraPos = glm::normalize(newCameraPos);
-		newCameraPos = { newCameraPos.x * this->cameraZoom, newCameraPos.y * this->cameraZoom, newCameraPos.z * this->cameraZoom };
+		newCameraPos = { newCameraPos.x * this->GetViewRadius(), newCameraPos.y * this->GetViewRadius(), newCameraPos.z * this->GetViewRadius() };
 	}
 	else
 	{
-		if (this->cameraZoom >1.5f)
+		if (this->GetViewRadius() >0.1f)
 		{
-			this->cameraZoom = 1.5f;
+			this->cameraState.cameraZoom = 0.1f;
 		}
-		else if (this->cameraZoom < 0.1f)
+		else if (this->GetViewRadius() < 0.001f)
 		{
-			this->cameraZoom = 0.1f;
+			this->cameraState.cameraZoom = 0.001f;
 		}
 
 		newCameraPos = glm::normalize(newCameraPos);
+		//newCameraPos = { newCameraPos.x * this->GetViewRadius(), newCameraPos.y * this->GetViewRadius(), newCameraPos.z * this->GetViewRadius() };
 		newCameraPos = { newCameraPos.x * 100.0f, newCameraPos.y * 100.0f, newCameraPos.z * 100.0f };
 	}
 
 	this->SetPosition(newCameraPos);
 }
 
-void Camera::ArcBall(double deltaX, double deltaY, double angleX, double angleY)
+void Camera::ArcBall(double angleX, double angleY)
 {
-	glm::vec4 camPositionHomogenous;
-	if (this->orthographicMode)
-	{
-		camPositionHomogenous = glm::vec4(this->position, 1.0f);
-	}
-	else
-	{
-		camPositionHomogenous = glm::vec4(glm::normalize(this->position), 1.0f);
-	}
-	glm::vec4 pivotPositionHomogenous = glm::vec4(this->target, 1.0f);
+	glm::vec4 camPositionHomogeneous = glm::vec4(this->GetPosition(), 1.0f);
+	glm::vec4 camSightHomogeneous = glm::vec4(-this->GetPosition(), 1.0f);
+	
+	glm::vec4 pivotPositionHomogeneous = glm::vec4(this->GetTarget(), 1.0f);
 
-	double cosAngle = glm::dot(this->GetViewDirection(), this->cameraUp);
+	glm::vec4 newUpHomogeneous = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+	glm::vec4 newRightHomogeneous = glm::vec4(this->GetCameraRight(), 1.0f);
 
-	int signDAngle;
-	if (angleY < 0.0f)
-	{
-		signDAngle = -1;
-	}
-	else if (angleY == 0.0f)
-	{
-		signDAngle = 0;
-	}
-	else
-	{
-		signDAngle = 1;
-	}
+	glm::mat4x4 rotationMatrix(1.0f);
 
-	if (cosAngle * (double)signDAngle > 0.999f)
-	{
-		angleY = 0.0f;
-	}
+	rotationMatrix = glm::rotate(rotationMatrix, (float)(angleX), -glm::cross(glm::vec3(camPositionHomogeneous.x, camPositionHomogeneous.y, 0.0f), this->GetCameraRight()));
+	rotationMatrix = glm::rotate(rotationMatrix, (float)angleY, -glm::vec3(newRightHomogeneous));
+	
 
-	glm::mat4x4 rotationMatrixX(1.0f);
-	rotationMatrixX = glm::rotate(rotationMatrixX, (float)angleX, this->cameraUp);
+	camPositionHomogeneous = rotationMatrix * (camPositionHomogeneous - pivotPositionHomogeneous) + pivotPositionHomogeneous;
 
-	camPositionHomogenous = rotationMatrixX * (camPositionHomogenous - pivotPositionHomogenous) + pivotPositionHomogenous;
+	glm::vec3 finalCameraHomogeneous = glm::vec3(camPositionHomogeneous.x * this->GetViewRadius(), camPositionHomogeneous.y * this->GetViewRadius(), camPositionHomogeneous.z * this->GetViewRadius());
 
-	glm::mat4x4 rotationMatrixY(1.0f);
-	rotationMatrixY = glm::rotate(rotationMatrixY, (float)angleY, this->GetCameraRight());
-
-	glm::vec3 finalCameraHomogenous = rotationMatrixY * (camPositionHomogenous - pivotPositionHomogenous) + pivotPositionHomogenous;
-
-	finalCameraHomogenous = glm::vec3(finalCameraHomogenous.x * this->GetViewRadius(), finalCameraHomogenous.y * this->GetViewRadius(), finalCameraHomogenous.z * this->GetViewRadius());
-
-	this->SetPosition(finalCameraHomogenous);
+	this->SetPosition(camPositionHomogeneous);
 
 	//update the up  vector:
-	//this->cameraRight = rotationMatrixY * rotationMatrixX * glm::vec4(this->cameraRight, 1.0f);
-	this->cameraUp = rotationMatrixY * rotationMatrixX * glm::vec4(this->cameraUp, 1.0f);
+
+	this->SetCameraRight(rotationMatrix * glm::vec4(this->GetCameraRight(), 1.0f));
+	this->SetCameraUp(rotationMatrix * glm::vec4(this->GetCameraUp(), 1.0f));
+	//this->cameraUp = glm::cross(this->cameraRight, glm::vec3(pivotPositionHomogenous - camPositionHomogenous));
 }

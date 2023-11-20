@@ -13,25 +13,35 @@
 #include "Message.h"
 #include "SceneObject.h"
 #include "Plane.h"
+#include "Axis.h"
 #include "Camera.h"
 #include "Shader.h"
+
+//struct to store the scene state
+struct SceneState
+{
+	bool ArcBallMode = false;
+	double LastArcClick[2] = { 0.0f, 0.0f };
+	double ArcDragVector[2] = { 0.0f, 0.0f };
+
+	int ScreenDimensions[2] = { 1, 1};
+	float ScreenAspectRatio = 1.0f;
+
+	double MousePos[2] = { 0.0f, 0.0f };
+
+};
 
 class CAD_SCENE
 {
 public:
+	//constructor(s) amd destructor
 	CAD_SCENE();
 	CAD_SCENE(std::string loadPath);
 	~CAD_SCENE();
 
-	bool viewArcBallOn = false;
-	double arcClickLastPos[2];
-	double arcDragVector[2];
-
-	int screenWidth, screenHeight;
-
-	double mousePos[2] = {0, 0};
-	
-
+	//Scene state information; turning this into a
+	//struct now
+	SceneState sceneState;
 	
 	Shader* GetShader() { return this->sceneShader; };
 	void SetShader(Shader* shader) { this->sceneShader = shader; };
@@ -45,8 +55,8 @@ public:
 	Camera* GetMainCamera() { return this->mainCamera; };
 	void AddSceneCamera();
 
-	void SetAspectRatio(float newAspectRatio) { this->aspectRatio = newAspectRatio; };
-	float GetAspectRatio() { return this->aspectRatio; };
+	void SetAspectRatio(float newAspectRatio) { this->sceneState.ScreenAspectRatio = newAspectRatio; };
+	float GetAspectRatio() { return this->sceneState.ScreenAspectRatio; };
 
 	bool HasUnsavedChanges() { return !this->upToDate; }
 
@@ -80,13 +90,5 @@ private:
 	//update variables within the shader during
 	//rendering
 	Shader* sceneShader = nullptr;
-
-	//keeps track of the aspect ratio, gets updated
-	//every time the window changes
-	float aspectRatio = 1.0f;
-
-	glm::vec3 GetArcBallVec(double* mousePos);
-	double GetArcBallAngle(glm::vec3 arcBallVec);
-
 };
 

@@ -22,6 +22,7 @@ enum ShaderType
 {
 	DEBUG,
 	PLANE_GRID,
+	AXIS,
 	FLAT,
 };
 

@@ -79,31 +79,24 @@ glm::mat4 Plane::GetModelMatrix()
 	glm::mat4 modelMatrix = glm::mat4(1.0f);
 
 	//first, scale the matrix
-	modelMatrix = glm::scale(modelMatrix, glm::vec3{this->GetObjectScale()});
+	glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{this->GetObjectScale()});
 
 	glm::vec3 axis = glm::normalize(glm::cross({ 0.0f, 0.0f, 1.0f }, this->normalVector));
 	float angle = glm::acos(glm::dot({ 0.0f, 0.0f, 1.0f }, this->normalVector));
+	glm::mat4 rotationMatrix = glm::rotate(modelMatrix, angle, axis);
+	
 
-	modelMatrix = glm::rotate(modelMatrix, angle, axis);
+	if ((this->normalVector == glm::vec3{ 0.0f, 0.0f, 1.0f } || this->normalVector == glm::vec3{ 0.0f, 0.0f, -1.0f }))
+	{
+		rotationMatrix = glm::mat4(1.0f);
+	}
 
 	//then, translate the matrix
-	modelMatrix = glm::translate(modelMatrix, this->GetObjectPosition());
+	glm::mat4 translateMatrix = glm::translate(modelMatrix, this->GetObjectPosition());
 
-	if ((this->normalVector == glm::vec3{ 0.0f, 0.0f, 1.0f } || this->normalVector == glm::vec3{ 0.0f, 0.0f, -1.0f })) modelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3{this->GetObjectScale()});
+	modelMatrix = translateMatrix * rotationMatrix * scaleMatrix;
 
 	return modelMatrix;
-
-	////rotate based on plane normals (UNLESS it will screw things up!)
-	//if (!(this->normalVector == glm::vec3{ 0.0f, 0.0f, 1.0f } || this->normalVector == glm::vec3{0.0f, 0.0f, -1.0f}))
-	//{
-	//	
-	//}
-	//else
-	//{
-	//	std::cout << "weird error! fun fun fun" << std::endl;
-	//}
-
-	
 }
 
 void Plane::DeleteObject()
