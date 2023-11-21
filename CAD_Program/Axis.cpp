@@ -1,26 +1,38 @@
 #include "Axis.h"
 
+#define NUM_AXIS_VERTICES 8
+#define NUM_AXIS_INDICES 36
+
 float Axis::axisVertices[] =
 {
     //X Y Z (model space)	//UV Coords
         //first rect
-        1.0f, 1.0f, 0.0f,		1.0f, 1.0f,	//top right
-        0.0f, 1.0f, 0.0f,		0.0f, 1.0f,	//top left
-        0.0f, -1.0f, 0.0f,		0.0f, 0.0f,	//bottom left
-        1.0f, -1.0f, 0.0f,		1.0f, 0.0f,	//bottom right
+        1.0f, 1.0f, -1.0f,		1.0f, 1.0f,	//top right (BOTTOM)
+        0.0f, 1.0f, -1.0f,		0.0f, 1.0f,	//top left (BOTTOM)
+        0.0f, -1.0f, -1.0f,		0.0f, 0.0f,	//bottom left (BOTTOM)
+        1.0f, -1.0f, -1.0f,		1.0f, 0.0f,	//bottom right (BOTTOM)
         //second rect
-        1.0f, 0.0f, 1.0f,		1.0f, 1.0f,	//top right
-        0.0f, 0.0f, 1.0f,		0.0f, 1.0f,	//top left
-        0.0f, 0.0f, -1.0f,		0.0f, 0.0f,	//bottom left
-        1.0f, 0.0f, -1.0f,		1.0f, 0.0f	//bottom right
+         1.0f, 1.0f, 1.0f,		1.0f, 1.0f,	//top right (TOP)
+        0.0f, 1.0f, 1.0f,		0.0f, 1.0f,	//top left (TOP)
+        0.0f, -1.0f, 1.0f,		0.0f, 0.0f,	//bottom left (TOP)
+        1.0f, -1.0f, 1.0f,		1.0f, 0.0f,	//bottom right (TOP)
 };
 
 unsigned int Axis::axisIndices[] =
 {
-    0, 1, 2,	//first triangle
-    3, 0, 2,	//second triangle
-    4, 5, 6,	//third triangle
-    7, 4, 6		//fourth triangle
+    0, 1, 2,
+    3, 0, 2,
+    4, 5, 6,
+    7, 4, 6,
+    7, 4, 0,
+    3, 7, 0,
+    4, 5, 1,
+    0, 4, 1,
+    5, 6, 2,
+    1, 5, 2,
+    6, 7, 2,
+    3, 2, 7
+
 };
 
 Axis::Axis(glm::vec3 axisVector, glm::vec3 axisPoint)
@@ -84,8 +96,8 @@ Axis::Axis(const char* basisDirection)
 
 void Axis::RenderObject()
 {
-    //we have 12 indices (remove hard coded value at some point)
-    this->RenderAsTriangles(12);
+    //we have 36 indices (remove hard coded value at some point)
+    this->RenderAsTriangles(NUM_AXIS_INDICES);
 }
 
 glm::mat4 Axis::GetModelMatrix()
@@ -94,7 +106,7 @@ glm::mat4 Axis::GetModelMatrix()
 
     //first scale the matrix-- make it looooooong
     //and skinny (like a line)
-    glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{ 2.0f, this->axisThickness, this->axisThickness });
+    glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{ 1.0f, this->axisThickness, this->axisThickness });
 
     //rotate into place
     glm::vec3 axis = glm::normalize(glm::cross({ 1.0f, 0.0f, 0.0f }, this->axisDirection));
@@ -117,9 +129,7 @@ glm::mat4 Axis::GetModelMatrix()
 
 void Axis::DeleteObject()
 {
-    glDeleteVertexArrays(1, this->GetObjectVAOPointer());
-    glDeleteBuffers(1, this->GetObjectVBOPointer());
-    glDeleteBuffers(1, this->GetObjectEBOPointer());
+    this->DeleteBuffers();
 }
 
 void Axis::InitAxis()
@@ -131,5 +141,5 @@ void Axis::InitAxis()
 
     //set up all the buffers; axes are defined with 8
     //vertices and 12 indices (four triangles * three points each)
-    this->SetUpBuffers(Axis::axisVertices, 8, Axis::axisIndices, 12);
+    this->SetUpBuffers(Axis::axisVertices, NUM_AXIS_VERTICES, Axis::axisIndices, NUM_AXIS_INDICES);
 }

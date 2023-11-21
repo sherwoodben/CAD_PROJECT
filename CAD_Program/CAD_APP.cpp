@@ -7,13 +7,16 @@ MessageManager CAD_APP::messageManager = MessageManager();
 void CAD_APP::RegisterCallbacks()
 {
 	//set the framebuffer size callback
-	glfwSetFramebufferSizeCallback(this->GetMainWindow(), windowResizeCallback);
+	glfwSetFramebufferSizeCallback(this->GetMainWindow(), CAD_APP::windowResizeCallback);
 
 	//set the mouse buttons callback
-	glfwSetMouseButtonCallback(this->GetMainWindow(), mouseButtonCallBack);
+	glfwSetMouseButtonCallback(this->GetMainWindow(), CAD_APP::mouseButtonCallback);
 
 	//set the mouse scroll wheel callback
 	glfwSetScrollCallback(this->GetMainWindow(), CAD_APP::mouseScrollCallback);
+
+	//set the keyboard press callback
+	glfwSetKeyCallback(this->GetMainWindow(), CAD_APP::keyCallback);
 
 }
 
@@ -44,7 +47,7 @@ bool CAD_APP::InitializeApp()
 	if (!this->InitializeDearImGui()) { return false; };
 	
 	if (!this->InitializeShader()) { return false; };
-	this->defaultApplicationShader->Use();
+	this->applicationShader->Use();
 
 	//load an empty scene to start
 	this->currentScene = this->LoadEmptyScene();
@@ -55,7 +58,7 @@ bool CAD_APP::InitializeApp()
 void CAD_APP::ShutdownApp()
 {
 	//delete the shader program
-	this->defaultApplicationShader->deleteProgram();
+	this->applicationShader->deleteProgram();
 
 	//clean up Dear ImGui
 	ImGui_ImplOpenGL3_Shutdown();
@@ -73,7 +76,7 @@ void CAD_APP::windowResizeCallback(GLFWwindow* resizedWindow, int newWidth, int 
 	messageManager.ReceiveMessage({ "WINDOW", "RESIZE" });
 }
 
-void CAD_APP::mouseButtonCallBack(GLFWwindow* relevantWindow, int button, int action, int mods)
+void CAD_APP::mouseButtonCallback(GLFWwindow* relevantWindow, int button, int action, int mods)
 {
 	Message msg;
 
@@ -123,6 +126,78 @@ void CAD_APP::mouseScrollCallback(GLFWwindow* relevantWindow, double xOffset, do
 	messageManager.ReceiveMessage({ "M_SCROLL", std::to_string(yOffset)});
 	//std::cout << yOffset << std::endl;
 }
+
+void CAD_APP::keyCallback(GLFWwindow* relevantWindow, int key, int scanCode, int action, int mods)
+{
+	Message msg;
+
+	//set the "message type" based on the shift key
+	if (key == GLFW_KEY_LEFT_SHIFT)
+	{
+		msg.messageType = "SHIFT";
+		
+	}
+	//or the alt key
+	else if (key == GLFW_KEY_LEFT_ALT)
+	{
+		msg.messageType = "ALT";
+	}
+	else if (key == GLFW_KEY_1)
+	{
+		msg.messageType = "NUM_1";
+	}
+	else if (key == GLFW_KEY_2)
+	{
+		msg.messageType = "NUM_2";
+	}
+	else if (key == GLFW_KEY_3)
+	{
+		msg.messageType = "NUM_3";
+	}
+	else if (key == GLFW_KEY_4)
+	{
+		msg.messageType = "NUM_4";
+	}
+	else if (key == GLFW_KEY_5)
+	{
+		msg.messageType = "NUM_5";
+	}
+	else if (key == GLFW_KEY_6)
+	{
+		msg.messageType = "NUM_6";
+	}
+	else if (key == GLFW_KEY_7)
+	{
+		msg.messageType = "NUM_7";
+	}
+	else if (key == GLFW_KEY_8)
+	{
+		msg.messageType = "NUM_8";
+	}
+	else if (key == GLFW_KEY_9)
+	{
+		msg.messageType = "NUM_9";
+	}
+
+	//ignore the "repeat" action
+	if (action == GLFW_PRESS)
+	{
+		msg.messageData = "PRESSED";
+	}
+	else if (action == GLFW_RELEASE)
+	{
+		msg.messageData = "RELEASED";
+	}
+
+	if (msg.messageType != "")
+	{
+		messageManager.ReceiveMessage(msg);
+	}
+
+
+
+}
+
 
 bool CAD_APP::InitializeGlfw()
 {
@@ -188,8 +263,8 @@ bool CAD_APP::InitializeDearImGui()
 
 bool CAD_APP::InitializeShader()
 {
-	this->defaultApplicationShader = new Shader("shader.vs", "shader.fs");
-	if (!this->defaultApplicationShader)
+	this->applicationShader = new Shader("shader.vs", "shader.fs");
+	if (!this->applicationShader)
 	{
 		return false;
 	}
@@ -202,6 +277,7 @@ void CAD_APP::InitializeDirectories()
 	//we'll have a "Data" folder (local relative to the
 	//application) where we store things like default
 	//window size, preferences, etc.
+	//(never actually called for now)
 	std::filesystem::create_directory("/data");
 }
 
@@ -256,14 +332,14 @@ void CAD_APP::RenderGUI()
 	ImGui::Begin("Scene Tree:");
 
 	//first, display the camera options
-	if (this->GetCurrentScene()->GetCamera()->GetOrthographicMode() == true)
+	if (this->GetCurrentScene()->GetCamera()->GetCameraState().cameraIsOrthographic == true)
 	{
 		if (ImGui::Button("Toggle Perspective"))
 		{
 			this->GetCurrentScene()->GetCamera()->SetPerspectiveMode();
 		}
 	}
-	else if (this->GetCurrentScene()->GetCamera()->GetOrthographicMode() == false)
+	else if (this->GetCurrentScene()->GetCamera()->GetCameraState().cameraIsOrthographic == false)
 	{
 		if (ImGui::Button("Toggle Orthographic"))
 		{
@@ -272,7 +348,7 @@ void CAD_APP::RenderGUI()
 	}
 	if (ImGui::Button("Reset Camera"))
 	{
-		this->GetCurrentScene()->SetCameraView(Camera::DefinedView::FRONT);
+		this->GetCurrentScene()->SetCameraView(Camera::DefinedView::RESET);
 	}
 	if (ImGui::Button("Save Camera View"))
 	{
@@ -283,23 +359,14 @@ void CAD_APP::RenderGUI()
 		this->GetCurrentScene()->SetCameraView(Camera::DefinedView::SAVED);
 	}
 	
-	//float camPos[3] = { this->GetCurrentScene()->GetCamera()->GetPosition().x, this->GetCurrentScene()->GetCamera()->GetPosition().y, this->GetCurrentScene()->GetCamera()->GetPosition().z};
-	//float fov = this->GetCurrentScene()->GetCamera()->GetFOV();
-	//ImGui::InputFloat3("(X, Y, Z)", camPos);
-	//ImGui::InputFloat("FOV:", &fov, 2.5f, 45.0f);
 	bool test;
 	if(ImGui::RadioButton("Test", &test))
 	{
-		//uhhhh
 	}
 	float testing;
 	if (ImGui::DragFloat("Test 2", &testing))
 	{
-		//uhhhhhhhhhhhhhh
-		glm::vec3 up = this->GetCurrentScene()->GetCamera()->GetCameraUp();
 	};
-	//this->GetCurrentScene()->GetCamera()->SetPosition({ camPos[0], camPos[1], camPos[2]});
-	//this->GetCurrentScene()->GetCamera()->SetFOV(fov);
 
 
 	//then list the objects
@@ -327,13 +394,9 @@ void CAD_APP::RenderGUI()
 		if (ImGui::Button(hideShowText.c_str()))
 		{
 			sO->isVisible = !(sO->isVisible);
-		}
-			
+		}	
 		
 		ImGui::PopID();
-
-		
-		
 	}
 
 	ImGui::End();
@@ -364,7 +427,7 @@ bool CAD_APP::LoadSceneFromFile(std::string scenePath)
 CAD_SCENE* CAD_APP::LoadEmptyScene()
 {
 	CAD_SCENE* emptyScene = new CAD_SCENE();
-	emptyScene->SetShader(this->defaultApplicationShader);
+	emptyScene->SetShader(this->applicationShader);
 
 	return emptyScene;
 }

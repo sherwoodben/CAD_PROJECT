@@ -113,6 +113,53 @@ void CAD_SCENE::ProcessMessage(Message msg)
 		}
 	}
 
+	if (msg.messageType == "SHIFT")
+	{
+		this->sceneState.ShiftModifier = (msg.messageData == "PRESSED");
+	}
+
+	if (msg.messageType == "ALT")
+	{
+		this->sceneState.AltModifier = (msg.messageData == "PRESSED");
+	}
+
+	if (msg.messageType == "NUM_1" && msg.messageData == "PRESSED")
+	{
+		if (!this->sceneState.ShiftModifier)
+		{
+			this->SetCameraView(Camera::DefinedView::FRONT);
+		}
+		else
+		{
+			this->SetCameraView(Camera::DefinedView::BACK);
+		}
+	}
+	if (msg.messageType == "NUM_2" && msg.messageData == "PRESSED")
+	{
+		if (!this->sceneState.ShiftModifier)
+		{
+			this->SetCameraView(Camera::DefinedView::RIGHT);
+		}
+		else
+		{
+			this->SetCameraView(Camera::DefinedView::LEFT);
+		}
+	}
+	if (msg.messageType == "NUM_3" && msg.messageData == "PRESSED")
+	{
+		if (!this->sceneState.ShiftModifier)
+		{
+			this->SetCameraView(Camera::DefinedView::TOP);
+		}
+		else
+		{
+			this->SetCameraView(Camera::DefinedView::BOTTOM);
+		}
+	}
+	if (msg.messageType == "NUM_4" && msg.messageData == "PRESSED")
+	{
+		this->SetCameraView(Camera::DefinedView::ISOMETRIC);
+	}
 	
 }
 
@@ -151,8 +198,9 @@ void CAD_SCENE::UpdateScene()
 	{
 		cam->UpdateCamera();
 
-		//if we have arc ball control for view enabled:
-		if (this->sceneState.ArcBallMode)
+		//if we have arc ball control for view enabled (NO SHIFT):
+		//("orbit camera" type mode)
+		if (this->sceneState.ArcBallMode && !this->sceneState.ShiftModifier)
 		{
 			double dAngleX = (2.0f * glm::pi<double>()) / (double)this->sceneState.ScreenDimensions[0];
 			double dAngleY = (2.0f * glm::pi<double>()) / (double)this->sceneState.ScreenDimensions[1];
@@ -162,8 +210,22 @@ void CAD_SCENE::UpdateScene()
 
 			cam->ArcBall(xAngle, yAngle);
 		}
+		//if we have translate control for view enabled (YES SHIFT):
+		//("pan" type mode)
+		else if (this->sceneState.ArcBallMode && this->sceneState.ShiftModifier)
+		{
+			double dDeltaX = 1.0f / (double)this->sceneState.ScreenDimensions[0];
+			double dDeltaY = 1.0f / (double)this->sceneState.ScreenDimensions[1];
+
+			double deltaX = this->sceneState.ArcDragVector[0] * dDeltaX;
+			double deltaY = -this->sceneState.ArcDragVector[1] * dDeltaY;
+
+			cam->TranslateCam(deltaX, deltaY);
+		}
+
 	}
 	
+	std::cout << "Shift: " << this->sceneState.ShiftModifier << "; Alt: " << this->sceneState.AltModifier << std::endl;
 
 }
 

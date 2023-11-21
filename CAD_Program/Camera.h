@@ -20,10 +20,7 @@ struct CameraState
 	float cameraZoom = 1.0f;
 
 	float cameraClippingPlanes[2] = { 0.05f, 500.0f };
-	
 };
-
-
 
 //a camera is a simple thing; it should have a position; a
 //projection mode (perspective or orthographic); a "world
@@ -37,9 +34,11 @@ public:
 		FRONT,
 		RIGHT,
 		TOP,
+		ISOMETRIC,
 		BACK,
 		LEFT,
 		BOTTOM,
+		RESET,
 		SAVED
 	};
 
@@ -64,35 +63,22 @@ public:
 	//perspective mode toggles/switches
 	void SetPerspectiveMode() { this->cameraState.cameraIsOrthographic = false; };
 	void SetOrthographicMode() { this->cameraState.cameraIsOrthographic = true; };
-	void ToggleOrthographicMode() { this->cameraState.cameraIsOrthographic = !this->cameraState.cameraIsOrthographic; };
-	bool GetOrthographicMode() { return this->cameraState.cameraIsOrthographic; };
 
-	//get information about the clipping planes
-	float GetNearClippingPlane() { return this->cameraState.cameraClippingPlanes[0]; };
-	float GetFarClippingPlane() { return this->cameraState.cameraClippingPlanes[1]; };
-
-	//get information about the camera FOV:
-	float GetFOV() { return this->cameraState.cameraFOV; };
-	void SetFOV(float newFOV) { this->cameraState.cameraFOV = newFOV; };
-
-	//get and set the positions
-	void SetPosition(glm::vec3 newPos) { this->cameraState.cameraPosition = newPos; };
-	glm::vec3 GetPosition() { return this->cameraState.cameraPosition; };
-
-	//get and set the camera right vector
-	void SetCameraRight(glm::vec3 newRight) { this->cameraState.cameraRight = newRight; };
-	void SetCameraUp(glm::vec3 newUp) { this->cameraState.cameraUp = newUp; };
-	glm::vec3 GetCameraRight() { return this->cameraState.cameraRight; };
-	glm::vec3 GetCameraUp() { return this->cameraState.cameraUp; };
-
+	//handle changing the zoom
 	void ChangeZoom(float zoomDelta);
 
+	//update the camera
 	void UpdateCamera();
+	//perspective update
+	void PerspectiveUpdate();
+	//orthographic update
+	void OrthographicUpdate();
 
+	//for moving the camera around in space
 	void ArcBall(double angleX, double angleY);
+	void TranslateCam(double deltaX, double deltaY);
 
-	float GetViewRadius() { return this->cameraState.cameraZoom; };
-
+	//"exposes" the camera state
 	CameraState GetCameraState() { return this->cameraState; };
 
 private:

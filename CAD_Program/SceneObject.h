@@ -56,6 +56,7 @@ public:
 	//that's allowed); different objects will implement
 	//a different method
 	virtual void DeleteObject() {};
+	void DeleteBuffers();
 
 	//we need a way to retrieve the VBO (ID)
 	unsigned int* GetObjectVBOPointer() { return &this->VBO; };
@@ -96,13 +97,13 @@ public:
 private:
 	//an ID for this SceneObject's VBO
 	//(vertex buffer object)
-	unsigned int VBO;
+	unsigned int VBO = 0;
 	//an ID for this SceneObject's VAO
 	//(vertex array object)
-	unsigned int VAO;
+	unsigned int VAO = 0;
 	//an ID for this SceneObject's EBO
 	//(element buffer array)
-	unsigned int EBO;
+	unsigned int EBO = 0;
 	//an int to keep track of the shader type; defined
 	//elsewhere
 	ShaderType shaderType = ShaderType::DEBUG;

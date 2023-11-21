@@ -91,9 +91,7 @@ glm::mat4 Plane::GetModelMatrix()
 
 void Plane::DeleteObject()
 {
-	glDeleteVertexArrays(1, this->GetObjectVAOPointer());
-	glDeleteBuffers(1, this->GetObjectVBOPointer());
-	glDeleteBuffers(1, this->GetObjectEBOPointer());
+	this->DeleteBuffers();
 }
 
 void Plane::InitPlane()

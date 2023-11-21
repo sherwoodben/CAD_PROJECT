@@ -7,18 +7,19 @@ public:
 	Axis(glm::vec3 axisVector, glm::vec3 axisPoint = {0.0f, 0.0f, 0.0f});
 	//Axis is defined by two points:
 	Axis(glm::vec3 point1, glm::vec3 point2, bool reverse);
-
 	//Axis defined by 'X' 'Y' or 'Z'
 	Axis(const char* basisDirection);
 
 	//destructor
 	~Axis() {};
 
+	//Implement specific render for axes (if any)
 	void RenderObject();
 
 	//gets the model matrix of the object
 	glm::mat4 GetModelMatrix();
 
+	//deletes the object
 	void DeleteObject();
 
 private:
@@ -36,6 +37,7 @@ private:
 	//and the indices
 	static unsigned int axisIndices[];
 
+	//initialization function
 	void InitAxis();
 };
 

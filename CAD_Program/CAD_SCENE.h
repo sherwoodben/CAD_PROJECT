@@ -20,6 +20,9 @@
 //struct to store the scene state
 struct SceneState
 {
+	bool ShiftModifier = false;
+	bool AltModifier = false;
+
 	bool ArcBallMode = false;
 	double LastArcClick[2] = { 0.0f, 0.0f };
 	double ArcDragVector[2] = { 0.0f, 0.0f };
