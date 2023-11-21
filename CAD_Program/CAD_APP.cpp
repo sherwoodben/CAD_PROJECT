@@ -1,17 +1,22 @@
 #include "CAD_APP.h"
 
+#include "Camera.h"
+
 MessageManager CAD_APP::messageManager = MessageManager();
 
 void CAD_APP::RegisterCallbacks()
 {
 	//set the framebuffer size callback
-	glfwSetFramebufferSizeCallback(this->GetMainWindow(), windowResizeCallback);
+	glfwSetFramebufferSizeCallback(this->applicationWindow, CAD_APP::windowResizeCallback);
 
 	//set the mouse buttons callback
-	glfwSetMouseButtonCallback(this->GetMainWindow(), mouseButtonCallBack);
+	glfwSetMouseButtonCallback(this->applicationWindow, CAD_APP::mouseButtonCallback);
 
 	//set the mouse scroll wheel callback
-	glfwSetScrollCallback(this->GetMainWindow(), CAD_APP::mouseScrollCallback);
+	glfwSetScrollCallback(this->applicationWindow, CAD_APP::mouseScrollCallback);
+
+	//set the keyboard press callback
+	glfwSetKeyCallback(this->applicationWindow, CAD_APP::keyCallback);
 
 }
 
@@ -24,9 +29,6 @@ void CAD_APP::MainLoop()
 {
 	//start a new Dear ImGui frame:
 	this->NewImGuiFrame();
-
-	//process input:
-	this->ProcessMessages();
 
 	//update application:
 	this->Update();
@@ -42,7 +44,7 @@ bool CAD_APP::InitializeApp()
 	if (!this->InitializeDearImGui()) { return false; };
 	
 	if (!this->InitializeShader()) { return false; };
-	this->defaultApplicationShader->Use();
+	this->applicationShader->Use();
 
 	//load an empty scene to start
 	this->currentScene = this->LoadEmptyScene();
@@ -53,7 +55,7 @@ bool CAD_APP::InitializeApp()
 void CAD_APP::ShutdownApp()
 {
 	//delete the shader program
-	this->defaultApplicationShader->deleteProgram();
+	this->applicationShader->deleteProgram();
 
 	//clean up Dear ImGui
 	ImGui_ImplOpenGL3_Shutdown();
@@ -71,7 +73,7 @@ void CAD_APP::windowResizeCallback(GLFWwindow* resizedWindow, int newWidth, int 
 	messageManager.ReceiveMessage({ "WINDOW", "RESIZE" });
 }
 
-void CAD_APP::mouseButtonCallBack(GLFWwindow* relevantWindow, int button, int action, int mods)
+void CAD_APP::mouseButtonCallback(GLFWwindow* relevantWindow, int button, int action, int mods)
 {
 	Message msg;
 
@@ -82,31 +84,31 @@ void CAD_APP::mouseButtonCallBack(GLFWwindow* relevantWindow, int button, int ac
 
 	}
 
-	if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+	else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
 	{
 		//std::cout << "Middle mouse button pressed." << std::endl;
 		msg = { "M_MOUSE", "PRESSED" };
 	}
 
-	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+	else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
 	{
 		//std::cout << "Right mouse button pressed." << std::endl;
 		msg = { "R_MOUSE", "PRESSED" };
 	}
 
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+	else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
 	{
 		//std::cout << "Left mouse button released." << std::endl;
 		msg = { "L_MOUSE", "RELEASED" };
 	}
 
-	if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
+	else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
 	{
 		//std::cout << "Middle mouse button released." << std::endl;
 		msg = { "M_MOUSE", "RELEASED" };
 	}
 
-	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+	else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
 	{
 		//std::cout << "Right mouse button released." << std::endl;
 		msg = { "R_MOUSE", "RELEASED" };
@@ -119,7 +121,80 @@ void CAD_APP::mouseScrollCallback(GLFWwindow* relevantWindow, double xOffset, do
 {
 	//std::cout << "Scroll: " << yOffset << std::endl;
 	messageManager.ReceiveMessage({ "M_SCROLL", std::to_string(yOffset)});
+	//std::cout << yOffset << std::endl;
 }
+
+void CAD_APP::keyCallback(GLFWwindow* relevantWindow, int key, int scanCode, int action, int mods)
+{
+	Message msg;
+
+	//set the "message type" based on the shift key
+	if (key == GLFW_KEY_LEFT_SHIFT)
+	{
+		msg.messageType = "SHIFT";
+		
+	}
+	//or the alt key
+	else if (key == GLFW_KEY_LEFT_ALT)
+	{
+		msg.messageType = "ALT";
+	}
+	else if (key == GLFW_KEY_1)
+	{
+		msg.messageType = "NUM_1";
+	}
+	else if (key == GLFW_KEY_2)
+	{
+		msg.messageType = "NUM_2";
+	}
+	else if (key == GLFW_KEY_3)
+	{
+		msg.messageType = "NUM_3";
+	}
+	else if (key == GLFW_KEY_4)
+	{
+		msg.messageType = "NUM_4";
+	}
+	else if (key == GLFW_KEY_5)
+	{
+		msg.messageType = "NUM_5";
+	}
+	else if (key == GLFW_KEY_6)
+	{
+		msg.messageType = "NUM_6";
+	}
+	else if (key == GLFW_KEY_7)
+	{
+		msg.messageType = "NUM_7";
+	}
+	else if (key == GLFW_KEY_8)
+	{
+		msg.messageType = "NUM_8";
+	}
+	else if (key == GLFW_KEY_9)
+	{
+		msg.messageType = "NUM_9";
+	}
+
+	//ignore the "repeat" action
+	if (action == GLFW_PRESS)
+	{
+		msg.messageData = "PRESSED";
+	}
+	else if (action == GLFW_RELEASE)
+	{
+		msg.messageData = "RELEASED";
+	}
+
+	if (msg.messageType != "")
+	{
+		messageManager.ReceiveMessage(msg);
+	}
+
+
+
+}
+
 
 bool CAD_APP::InitializeGlfw()
 {
@@ -134,14 +209,14 @@ bool CAD_APP::InitializeGlfw()
 
 	//create the  window:
 	this->applicationWindow = glfwCreateWindow(640, 480, "Default Window", NULL, NULL);
-	if (!this->GetMainWindow())
+	if (!this->applicationWindow)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
 		return false;
 	}
 
 	//we made a window, now make that window the current context
-	glfwMakeContextCurrent(this->GetMainWindow());
+	glfwMakeContextCurrent(this->applicationWindow);
 
 	//register callbacks
 	this->RegisterCallbacks();
@@ -171,7 +246,7 @@ bool CAD_APP::InitializeDearImGui()
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 
 	//setup platform/rendererr bindings:
-	if (!ImGui_ImplGlfw_InitForOpenGL(this->GetMainWindow(), true))
+	if (!ImGui_ImplGlfw_InitForOpenGL(this->applicationWindow, true))
 	{
 		return false;
 	}
@@ -185,8 +260,8 @@ bool CAD_APP::InitializeDearImGui()
 
 bool CAD_APP::InitializeShader()
 {
-	this->defaultApplicationShader = new Shader("shader.vs", "shader.fs");
-	if (!this->defaultApplicationShader)
+	this->applicationShader = new Shader("shader.vs", "shader.fs");
+	if (!this->applicationShader)
 	{
 		return false;
 	}
@@ -199,6 +274,7 @@ void CAD_APP::InitializeDirectories()
 	//we'll have a "Data" folder (local relative to the
 	//application) where we store things like default
 	//window size, preferences, etc.
+	//(never actually called for now)
 	std::filesystem::create_directory("/data");
 }
 
@@ -209,19 +285,14 @@ void CAD_APP::NewImGuiFrame()
 	ImGui::NewFrame();
 }
 
-
-void CAD_APP::ProcessMessages()
+void CAD_APP::Update()
 {
 	//send the latest messages from the manager
 	while (CAD_APP::messageManager.QueueHasMessages())
 	{
 		this->currentScene->ProcessMessage(messageManager.DispatchMessage());
 	}
-	
-}
 
-void CAD_APP::Update()
-{
 	this->currentScene->UpdateScene();
 }
 
@@ -234,65 +305,49 @@ void CAD_APP::Render()
 	this->RenderGUI();
 
 	//swap glfwbuffers
-	glfwSwapBuffers(this->GetMainWindow());
+	glfwSwapBuffers(this->applicationWindow);
 
 	//poll events
 	glfwPollEvents();
-}
-
-void CAD_APP::RenderOpenGL()
-{
-
 }
 
 void CAD_APP::RenderGUI()
 {
 	//render Dear ImGUI GUI
 	//begin a test window -- will eventually become
-	//the "scene tree"
+	//the "scene tree" --bit of a misnomer for now
 	ImGui::Begin("Scene Tree:");
 
-	//first, display the current camera
-	std::string camText = "Camera ";
-	camText.append(std::to_string(this->GetCurrentScene()->GetMainCamera()->GetID()));
-	ImGui::Text(camText.c_str());
-	ImGui::SameLine();
-	if (this->GetCurrentScene()->GetMainCamera()->GetOrthographicMode() == true)
+	//first, display the camera options
+	if (this->currentScene->sceneState.SceneCamera.GetCameraState().cameraIsOrthographic == true)
 	{
 		if (ImGui::Button("Toggle Perspective"))
 		{
-			this->GetCurrentScene()->GetMainCamera()->SetPerspectiveMode();
+			this->currentScene->sceneState.SceneCamera.SetPerspectiveMode();
 		}
 	}
-	else if (this->GetCurrentScene()->GetMainCamera()->GetOrthographicMode() == false)
+	else if (this->currentScene->sceneState.SceneCamera.GetCameraState().cameraIsOrthographic == false)
 	{
 		if (ImGui::Button("Toggle Orthographic"))
 		{
-			this->GetCurrentScene()->GetMainCamera()->SetOrthographicMode();
+			this->currentScene->sceneState.SceneCamera.SetOrthographicMode();
 		}
 	}
-	
-	float camPos[3] = { this->GetCurrentScene()->GetMainCamera()->GetPosition().x, this->GetCurrentScene()->GetMainCamera()->GetPosition().y, this->GetCurrentScene()->GetMainCamera()->GetPosition().z};
-	float fov = this->GetCurrentScene()->GetMainCamera()->GetFOV();
-	ImGui::InputFloat3("(X, Y, Z)", camPos);
-	ImGui::InputFloat("FOV:", &fov, 2.5f, 45.0f);
-	bool test;
-	if(ImGui::RadioButton("Test", &test))
+	if (ImGui::Button("Reset Camera"))
 	{
-		//uhhhh
+		this->currentScene->SetCameraView(CameraState::DefinedView::RESET);
 	}
-	float testing;
-	if (ImGui::DragFloat("Test 2", &testing))
+	if (ImGui::Button("Save Camera View"))
 	{
-		//uhhhhhhhhhhhhhh
-		glm::vec3 up = this->GetCurrentScene()->GetMainCamera()->GetCameraUp();
-	};
-	this->GetCurrentScene()->GetMainCamera()->SetPosition({ camPos[0], camPos[1], camPos[2]});
-	this->GetCurrentScene()->GetMainCamera()->SetFOV(fov);
-
+		this->currentScene->SaveCameraView();
+	}
+	if (ImGui::Button("Load Camera View"))
+	{
+		this->currentScene->SetCameraView(CameraState::DefinedView::SAVED);
+	}
 
 	//then list the objects
-	for (SceneObject* sO : this->GetCurrentScene()->GetSceneObjects() )
+	for (SceneObject* sO : this->currentScene->GetSceneObjects() )
 	{
 		//if this is a default object, display in a different color:
 		if (sO->isDefaultObject)
@@ -316,13 +371,9 @@ void CAD_APP::RenderGUI()
 		if (ImGui::Button(hideShowText.c_str()))
 		{
 			sO->isVisible = !(sO->isVisible);
-		}
-			
+		}	
 		
 		ImGui::PopID();
-
-		
-		
 	}
 
 	ImGui::End();
@@ -338,7 +389,7 @@ bool CAD_APP::LoadSceneFromFile(std::string scenePath)
 	if (this->currentScene)
 	{
 		//check if current scene needs to be saved:
-		if (this->currentScene->HasUnsavedChanges())
+		if (this->currentScene->HasChanges())
 		{
 			//implement this later
 		}
@@ -353,7 +404,7 @@ bool CAD_APP::LoadSceneFromFile(std::string scenePath)
 CAD_SCENE* CAD_APP::LoadEmptyScene()
 {
 	CAD_SCENE* emptyScene = new CAD_SCENE();
-	emptyScene->SetShader(this->defaultApplicationShader);
+	emptyScene->SetShader(this->applicationShader);
 
 	return emptyScene;
 }

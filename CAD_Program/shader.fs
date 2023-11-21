@@ -32,13 +32,17 @@ void main()
 	{
 		resultingColor = flatColor;
 	}
+	else if (shaderType == 3)
+	{
+		resultingColor = flatColor;
+	}
 
 	FragColor = resultingColor;
 }
 vec4 DoPlaneGrid(in vec2 gridCoords)
 {
 	float semiMajorDivisions = 5;
-	float gridLineWidth = 0.05;
+	float gridLineWidth = 0.025;
 	float minorDivisions = 4.0;
 
 	vec2 cellCoord = fract(gridCoords * semiMajorDivisions * 2.);

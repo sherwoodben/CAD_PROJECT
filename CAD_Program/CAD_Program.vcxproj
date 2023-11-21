@@ -155,11 +155,11 @@
     <ClCompile Include="..\imgui\imgui_stdlib.cpp" />
     <ClCompile Include="..\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Axis.cpp" />
     <ClCompile Include="CAD_APP.cpp" />
     <ClCompile Include="CAD_SCENE.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Message.cpp" />
     <ClCompile Include="Plane.cpp" />
     <ClCompile Include="SceneObject.cpp" />
     <ClCompile Include="Shader.cpp" />
@@ -175,6 +175,7 @@
     <ClInclude Include="..\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\imgui\imstb_textedit.h" />
     <ClInclude Include="..\imgui\imstb_truetype.h" />
+    <ClInclude Include="Axis.h" />
     <ClInclude Include="CAD_APP.h" />
     <ClInclude Include="CAD_SCENE.h" />
     <ClInclude Include="Camera.h" />

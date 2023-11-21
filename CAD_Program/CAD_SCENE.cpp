@@ -22,38 +22,47 @@ CAD_SCENE::~CAD_SCENE()
 
 void CAD_SCENE::LoadDefaultObjects()
 {
+	//SET UP PLANES
+	this->LoadDefaultPlanes();
+
+	//SET UP AXES
+	this->LoadDefaultAxes();
+}
+
+void CAD_SCENE::LoadDefaultPlanes()
+{
 	Plane* tempPlane = nullptr;
 	//load default planes:
 	//	X-Y Plane
-	tempPlane = new Plane({ 0.0f, 0.0f, 1.0f });
-	tempPlane->displayName = "X - Y Plane";
-	tempPlane->isDefaultObject = true;
-	tempPlane->SetDebugColor({ 255, 0, 0});
-	tempPlane->SetFlatColor({ 255, 192, 192 });
-	tempPlane->SetObjectScale(10.0f);
-	this->AddSceneObject(tempPlane);
-	tempPlane = nullptr;
-	//	Y-Z Plane
-	tempPlane = new Plane({ 1.0f, 0.0f, 0.0f });
-	tempPlane->displayName = "Y - Z Plane";
-	tempPlane->isDefaultObject = true;
-	tempPlane->SetDebugColor({ 0, 255, 0});
-	tempPlane->SetFlatColor({ 192, 255, 192 });
-	tempPlane->SetObjectScale(10.0f);
+	tempPlane = new Plane("Z");
 	this->AddSceneObject(tempPlane);
 	tempPlane = nullptr;
 	//	X-Z Plane
-	tempPlane = new Plane({ 0.0f, -1.0f, 0.0f });
-	tempPlane->displayName = "X - Z Plane";
-	tempPlane->isDefaultObject = true;
-	tempPlane->SetDebugColor({ 0, 0, 255});
-	tempPlane->SetFlatColor({ 192, 192, 255 });
-	tempPlane->SetObjectScale(10.0f);
+	tempPlane = new Plane("Y");
 	this->AddSceneObject(tempPlane);
 	tempPlane = nullptr;
+	//	Y-Z Plane
+	tempPlane = new Plane("X");
+	this->AddSceneObject(tempPlane);
+	tempPlane = nullptr;
+}
 
-	//add the default camera to the scene
-	this->AddSceneCamera();
+void CAD_SCENE::LoadDefaultAxes()
+{
+	Axis* tempAxis = nullptr;
+	//load default axes:
+	// X Axis
+	tempAxis = new Axis("X");
+	this->AddSceneObject(tempAxis);
+	tempAxis = nullptr;
+	// Y Axis
+	tempAxis = new Axis("Y");
+	this->AddSceneObject(tempAxis);
+	tempAxis = nullptr;
+	// Z Axis
+	tempAxis = new Axis("Z");
+	this->AddSceneObject(tempAxis);
+	tempAxis = nullptr;
 }
 
 void CAD_SCENE::AddSceneObject(SceneObject* objectToAdd)
@@ -61,17 +70,38 @@ void CAD_SCENE::AddSceneObject(SceneObject* objectToAdd)
 	this->sceneObjects.push_back(objectToAdd);
 }
 
-void CAD_SCENE::AddSceneCamera()
+void CAD_SCENE::DoArcBallCam()
 {
-	//add a camera to the scene
-	this->sceneCameras.push_back(new Camera(cameraIterator));
+	double dAngleX = (2.0f * glm::pi<double>()) / (double)this->sceneState.ScreenDimensions[0];
+	double dAngleY = (2.0f * glm::pi<double>()) / (double)this->sceneState.ScreenDimensions[1];
 
-	if (cameraIterator == 0)
+	double xAngle = -this->sceneState.ArcDragVector[0] * dAngleX;
+	double yAngle = -this->sceneState.ArcDragVector[1] * dAngleY;
+
+	this->sceneState.SceneCamera.ArcBall(xAngle, yAngle);
+}
+
+void CAD_SCENE::DoTranslateCam()
+{
+	double dDeltaX = 1.0f / (double)this->sceneState.ScreenDimensions[0];
+	double dDeltaY = 1.0f / (double)this->sceneState.ScreenDimensions[1];
+
+	double deltaX = this->sceneState.ArcDragVector[0] * dDeltaX;
+	double deltaY = -this->sceneState.ArcDragVector[1] * dDeltaY;
+
+	this->sceneState.SceneCamera.TranslateCam(deltaX, deltaY);
+}
+
+void CAD_SCENE::SetCameraView(CameraState::DefinedView desiredView)
+{
+	if (desiredView == CameraState::DefinedView::SAVED)
 	{
-		this->SetMainCamera(this->sceneCameras[cameraIterator]);
+		this->sceneState.SceneCamera.GoToDefinedView(desiredView, this->sceneState.SavedView);
 	}
-	//increment the counter to ensure unique IDs
-	this->cameraIterator++;
+	else
+	{
+		this->sceneState.SceneCamera.GoToDefinedView(desiredView);
+	}
 }
 
 void CAD_SCENE::CloseScene()
@@ -81,121 +111,128 @@ void CAD_SCENE::CloseScene()
 void CAD_SCENE::ProcessMessage(Message msg)
 {
 	std::cout << msg.messageType << std::endl;
-	std::cout << msg.messageData << std::endl;
+	
 
+	//Middle mouse toggles the arc ball for manipulating the view
 	if (msg.messageType == "M_MOUSE")
 	{
-		viewArcBallOn = (msg.messageData == "PRESSED");
+		this->sceneState.ArcBallMode = (msg.messageData == "PRESSED");
 
-		arcClickLastPos[0] = mousePos[0];
-		arcClickLastPos[1] = mousePos[1];
+		this->sceneState.LastArcClick[0] = this->sceneState.MousePos[0];
+		this->sceneState.LastArcClick[1] = this->sceneState.MousePos[1];
 	}
 
+	//mouse when scroll zooms in and out
+	if (msg.messageType == "M_SCROLL")
+	{
+		std::cout << std::log(2 + std::stof(msg.messageData)) << std::endl;
+
+		float zoomDelta = std::stof(msg.messageData);
+
+		if (&this->sceneState.SceneCamera != nullptr)
+		{
+			this->sceneState.SceneCamera.ChangeZoom(zoomDelta);
+		}
+	}
+
+	if (msg.messageType == "SHIFT")
+	{
+		this->sceneState.ShiftModifier = (msg.messageData == "PRESSED");
+	}
+
+	if (msg.messageType == "ALT")
+	{
+		this->sceneState.AltModifier = (msg.messageData == "PRESSED");
+	}
+
+	if (msg.messageType == "NUM_1" && msg.messageData == "PRESSED")
+	{
+		if (!this->sceneState.ShiftModifier)
+		{
+			this->SetCameraView(CameraState::DefinedView::FRONT);
+		}
+		else
+		{
+			this->SetCameraView(CameraState::DefinedView::BACK);
+		}
+	}
+	if (msg.messageType == "NUM_2" && msg.messageData == "PRESSED")
+	{
+		if (!this->sceneState.ShiftModifier)
+		{
+			this->SetCameraView(CameraState::DefinedView::RIGHT);
+		}
+		else
+		{
+			this->SetCameraView(CameraState::DefinedView::LEFT);
+		}
+	}
+	if (msg.messageType == "NUM_3" && msg.messageData == "PRESSED")
+	{
+		if (!this->sceneState.ShiftModifier)
+		{
+			this->SetCameraView(CameraState::DefinedView::TOP);
+		}
+		else
+		{
+			this->SetCameraView(CameraState::DefinedView::BOTTOM);
+		}
+	}
+	if (msg.messageType == "NUM_4" && msg.messageData == "PRESSED")
+	{
+		this->SetCameraView(CameraState::DefinedView::ISOMETRIC);
+	}
 	
 }
 
 void CAD_SCENE::UpdateMousePosition()
 {
-	glfwGetCursorPos(glfwGetCurrentContext(), &mousePos[0], &mousePos[1]);
-	mousePos[0] = std::min(mousePos[0], (double)screenWidth);
-	mousePos[1] = std::min(mousePos[1], (double)screenHeight);
-	std::cout << "Mouse X: " << mousePos[0] << ", Mouse Y: " << mousePos[1] << std::endl;
+	glfwGetCursorPos(glfwGetCurrentContext(), &this->sceneState.MousePos[0], &this->sceneState.MousePos[1]);
+	this->sceneState.MousePos[0] = std::min(this->sceneState.MousePos[0], (double)this->sceneState.ScreenDimensions[0]);
+	this->sceneState.MousePos[0] = std::max(this->sceneState.MousePos[0], (double)0.0f);
+	this->sceneState.MousePos[1] = std::min(this->sceneState.MousePos[1], (double)this->sceneState.ScreenDimensions[1]);
+	this->sceneState.MousePos[1] = std::max(this->sceneState.MousePos[1], (double)0.0f);
 
-	if (viewArcBallOn)
+	if (this->sceneState.ArcBallMode)
 	{
+		this->sceneState.ArcDragVector[0] = this->sceneState.LastArcClick[0] - this->sceneState.MousePos[0];
+		this->sceneState.ArcDragVector[1] = this->sceneState.LastArcClick[1] - this->sceneState.MousePos[1];
 
-		arcDragVector[0] = arcClickLastPos[0] - mousePos[0];
-		arcDragVector[1] = arcClickLastPos[1] - mousePos[1];
+		this->sceneState.LastArcClick[0] = this->sceneState.MousePos[0];
+		this->sceneState.LastArcClick[1] = this->sceneState.MousePos[1];
 	}
 }
 
 void CAD_SCENE::UpdateScreenProperties()
 {
-	glfwGetWindowSize(glfwGetCurrentContext(), &screenWidth, &screenHeight);
-	this->SetAspectRatio((float)screenWidth / (float)screenHeight);
-}
-
-glm::vec3 CAD_SCENE::GetArcBallVec(double* mousePos)
-{
-	glm::vec3 ballPoint = glm::vec3(
-			(mousePos[0] / ((2.0f) * (double)screenWidth)) - 1.0f,
-			-1.0f*((mousePos[1] / ((2.0f) * (double)screenHeight)) - 1.0f),
-			0.0f);
-	double distToBallCenter = ballPoint.x * ballPoint.x + ballPoint.y * ballPoint.y;
-
-	if (distToBallCenter <= 1.0f)
-	{
-		ballPoint.z = sqrt(1.0f - distToBallCenter);
-	}
-	else
-	{
-		ballPoint = glm::normalize(ballPoint);
-	}
-
-	return ballPoint;
-}
-
-double CAD_SCENE::GetArcBallAngle(glm::vec3 arcBallVec)
-{
-	glm::vec3 originalVec = GetArcBallVec(arcClickLastPos);
-	return acos(std::min(1.0f, glm::dot(originalVec, arcBallVec)));
+	glfwGetWindowSize(glfwGetCurrentContext(), &this->sceneState.ScreenDimensions[0], &this->sceneState.ScreenDimensions[1]);
+	this->sceneState.ScreenAspectRatio = ((float)this->sceneState.ScreenDimensions[0] / (float)this->sceneState.ScreenDimensions[1]);
 }
 
 void CAD_SCENE::UpdateScene()
 {
+	Camera* cam = &this->sceneState.SceneCamera;
+
 	this->UpdateScreenProperties();
 	this->UpdateMousePosition();
 	
-	//if we have arc ball control for view enabled:
-	if (viewArcBallOn)
-	{	
-		if (this->GetMainCamera())
+	if (cam)
+	{
+		cam->UpdateCamera();
+
+		//if we have arc ball control for view enabled (NO SHIFT):
+		//("orbit camera" type mode)
+		if (this->sceneState.ArcBallMode && !this->sceneState.ShiftModifier)
 		{
-			glm::vec4 camPositionHomogenous = glm::vec4(this->GetMainCamera()->GetPosition(), 1.0f);
-			glm::vec4 pivotPositionHomogenous = glm::vec4(this->GetMainCamera()->GetTarget(), 1.0f);
-
-			double dAngleX = (2.0f * glm::pi<double>()) / (double)screenWidth;
-			double dAngleY = (2.0f * glm::pi<double>()) / (double)screenHeight;
-
-			double xAngle = arcDragVector[0] * dAngleX;
-			double yAngle = arcDragVector[1] * dAngleY;
-
-			double cosAngle = glm::dot(this->GetMainCamera()->GetViewDirection(), { 0.0f, 0.0f, 1.0f });
+			this->DoArcBallCam();
 			
-			int signDAngle;
-			if (yAngle < 0.0f)
-			{
-				signDAngle = -1;
-			}
-			else if (yAngle == 0.0f)
-			{
-				signDAngle = 0;
-			}
-			else
-			{
-				signDAngle = 1;
-			}
-			
-			if (cosAngle * (double)signDAngle > 0.99f)
-			{
-				dAngleY = 0.0f;
-			}
-
-			glm::mat4x4 rotationMatrixX(1.0f);
-			rotationMatrixX = glm::rotate(rotationMatrixX, (float)xAngle, { 0.0f, 0.0f, 1.0f });
-
-			camPositionHomogenous = rotationMatrixX * (camPositionHomogenous - pivotPositionHomogenous) + pivotPositionHomogenous;
-
-			glm::mat4x4 rotationMatrixY(1.0f);
-			rotationMatrixY = glm::rotate(rotationMatrixY, (float)yAngle, this->GetMainCamera()->GetCameraRight());
-
-			glm::vec3 finalCameraHomogenous = rotationMatrixY * (camPositionHomogenous - pivotPositionHomogenous) + pivotPositionHomogenous;
-
-			this->GetMainCamera()->SetPosition(finalCameraHomogenous);
 		}
-
-		this->arcClickLastPos[0] = mousePos[0];
-		this->arcClickLastPos[1] = mousePos[1];
+		//if we have translate control for view enabled (YES SHIFT):
+		//("pan" type mode)
+		else if (this->sceneState.ArcBallMode && this->sceneState.ShiftModifier)
+		{
+			this->DoTranslateCam();
+		}
 	}
 }
 
@@ -211,148 +248,145 @@ void CAD_SCENE::RenderScene()
 	// draw in wireframe
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	//set the clear color
-	glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
+	glClearColor(0.15f, 0.15f, 0.25f, 1.0f);
 	//clear the window
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//get the active camera, and get the "projection
 	//matrix" and "view matrix" from that camera:
-	//(but only do this if a camera exists!)
-	if (!this->sceneCameras.empty())
+	
+	//first the projection matrix
+	glm::mat4 projectionMatrix = this->sceneState.SceneCamera.GetProjectionMatrix(this->sceneState.ScreenAspectRatio);
+	//and get the view matrix
+	glm::mat4 viewMatrix = this->sceneState.SceneCamera.GetViewMatrix();
+
+	//update the uniforms for the shader with the camera matrices
+	this->GetShader()->setMat4("projection", projectionMatrix);
+	this->GetShader()->setMat4("view", viewMatrix);
+
+	std::vector<SceneObject*> objectsWithTransparency;
+
+	//now, loop through the SceneObjects
+	//and render them
+	for (SceneObject* sO : this->GetSceneObjects())
 	{
-		//first the projection matrix
-		glm::mat4 projectionMatrix = this->GetMainCamera()->GetProjectionMatrix(this->GetAspectRatio());
-		//and get the view matrix
-		glm::mat4 viewMatrix = this->GetMainCamera()->GetViewMatrix();
-
-		//update the uniforms for the shader with the camera matrices
-		this->GetShader()->setMat4("projection", projectionMatrix);
-		this->GetShader()->setMat4("view", viewMatrix);
-
-		std::vector<SceneObject*> objectsWithTransparency;
-
-		//now, loop through the SceneObjects
-		//and render them
-		for (SceneObject* sO : this->GetSceneObjects())
+		//only do this if the object is visible:
+		if (!sO->isVisible)
 		{
-			//only do this if the object is visible:
-			if (!sO->isVisible)
-			{
-				continue;
-			}
-			//if the object has transparency, add that to the list so we can do them second:
-			if (sO->GetIsTransparent())
-			{
-				objectsWithTransparency.push_back(sO);
-				continue;
-			}
-			//update the -per model- uniforms (i.e.
-			//model matrices, colors, etc.)
-			//first get the model matrix:
-			glm::mat4 modelMatrix = sO->GetModelMatrix();
-			//then update the shader
-			this->GetShader()->setMat4("model", modelMatrix);
-
-			//get the R G B and A components of the debug color
-			//of the model
-			float r = (float)sO->GetDebugColor().r;
-			float g = (float)sO->GetDebugColor().g;
-			float b = (float)sO->GetDebugColor().b;
-			float a = (float)sO->GetDebugColor().a;
-			//scale them to be between 0 and 1 (divide by 255)
-			r /= 255.0f;
-			g /= 255.0f;
-			b /= 255.0f;
-			a /= 255.0f;
-			//now, make  the color a vec4
-			glm::vec4 debugColor = glm::vec4(r, g, b, a);
-			//next, do the debug color to test things
-			this->GetShader()->setVec4("debugColor", debugColor);
-
-			//do the same for the flat color (wow, this is a pain! maybe I should fix that.)
-			r = (float)sO->GetFlatColor().r;
-			g = (float)sO->GetFlatColor().g;
-			b = (float)sO->GetFlatColor().b;
-			a = (float)sO->GetFlatColor().a;
-			//scale them to be between 0 and 1 (divide by 255)
-			r /= 255.0f;
-			g /= 255.0f;
-			b /= 255.0f;
-			a /= 255.0f;
-			//now, make  the color a vec4
-			glm::vec4 flatColor = glm::vec4(r, g, b, a);
-			//update the flat color uniform
-			this->GetShader()->setVec4("flatColor", flatColor);
-
-			//next, update the shader based on the object type:
-			this->GetShader()->setInt("shaderType", sO->GetShaderType());
-			//then render the object
-			sO->RenderObject();
+			continue;
 		}
-
-		//start of transparencies; turn off depth mask
-		glDepthMask(false);
-
-		//now do that whole loop for objects with transparency: hint-- should turn this into a
-		//function or something!
-		for (SceneObject* sO : objectsWithTransparency)
+		//if the object has transparency, add that to the list so we can do them second:
+		if (sO->GetIsTransparent())
 		{
-			//only do this if the object is visible:
-			if (!sO->isVisible)
-			{
-				continue;
-			}
-
-			//update the -per model- uniforms (i.e.
-			//model matrices, colors, etc.)
-			//first get the model matrix:
-			glm::mat4 modelMatrix = sO->GetModelMatrix();
-			//then update the shader
-			this->GetShader()->setMat4("model", modelMatrix);
-
-			//get the R G B and A components of the debug color
-			//of the model
-			float r = (float)sO->GetDebugColor().r;
-			float g = (float)sO->GetDebugColor().g;
-			float b = (float)sO->GetDebugColor().b;
-			float a = (float)sO->GetDebugColor().a;
-			//scale them to be between 0 and 1 (divide by 255)
-			r /= 255.0f;
-			g /= 255.0f;
-			b /= 255.0f;
-			a /= 255.0f;
-			//now, make  the color a vec4
-			glm::vec4 debugColor = glm::vec4(r, g, b, a);
-			//next, do the debug color to test things
-			this->GetShader()->setVec4("debugColor", debugColor);
-
-			//do the same for the flat color (wow, this is a pain! maybe I should fix that.)
-			r = (float)sO->GetFlatColor().r;
-			g = (float)sO->GetFlatColor().g;
-			b = (float)sO->GetFlatColor().b;
-			a = (float)sO->GetFlatColor().a;
-			//scale them to be between 0 and 1 (divide by 255)
-			r /= 255.0f;
-			g /= 255.0f;
-			b /= 255.0f;
-			a /= 255.0f;
-			//now, make  the color a vec4
-			glm::vec4 flatColor = glm::vec4(r, g, b, a);
-			//update the flat color uniform
-			this->GetShader()->setVec4("flatColor", flatColor);
-
-			//next, update the shader based on the object type:
-			this->GetShader()->setInt("shaderType", sO->GetShaderType());
-			//then render the object
-			sO->RenderObject();
+			objectsWithTransparency.push_back(sO);
+			continue;
 		}
+		//update the -per model- uniforms (i.e.
+		//model matrices, colors, etc.)
+		//first get the model matrix:
+		glm::mat4 modelMatrix = sO->GetModelMatrix();
+		//then update the shader
+		this->GetShader()->setMat4("model", modelMatrix);
 
-		//done with transparencies; turn on depth mask again
-		glDepthMask(true);
-		
+		//get the R G B and A components of the debug color
+		//of the model
+		float r = (float)sO->GetDebugColor().r;
+		float g = (float)sO->GetDebugColor().g;
+		float b = (float)sO->GetDebugColor().b;
+		float a = (float)sO->GetDebugColor().a;
+		//scale them to be between 0 and 1 (divide by 255)
+		r /= 255.0f;
+		g /= 255.0f;
+		b /= 255.0f;
+		a /= 255.0f;
+		//now, make  the color a vec4
+		glm::vec4 debugColor = glm::vec4(r, g, b, a);
+		//next, do the debug color to test things
+		this->GetShader()->setVec4("debugColor", debugColor);
 
-		//std::cout << glGetError() << std::endl;
+		//do the same for the flat color (wow, this is a pain! maybe I should fix that.)
+		r = (float)sO->GetFlatColor().r;
+		g = (float)sO->GetFlatColor().g;
+		b = (float)sO->GetFlatColor().b;
+		a = (float)sO->GetFlatColor().a;
+		//scale them to be between 0 and 1 (divide by 255)
+		r /= 255.0f;
+		g /= 255.0f;
+		b /= 255.0f;
+		a /= 255.0f;
+		//now, make  the color a vec4
+		glm::vec4 flatColor = glm::vec4(r, g, b, a);
+		//update the flat color uniform
+		this->GetShader()->setVec4("flatColor", flatColor);
+
+		//next, update the shader based on the object type:
+		this->GetShader()->setInt("shaderType", sO->GetShaderType());
+		//then render the object
+		sO->RenderObject();
 	}
+
+	//start of transparencies; turn off depth mask
+	glDepthMask(false);
+
+	//now do that whole loop for objects with transparency: hint-- should turn this into a
+	//function or something!
+	for (SceneObject* sO : objectsWithTransparency)
+	{
+		//only do this if the object is visible:
+		if (!sO->isVisible)
+		{
+			continue;
+		}
+
+		//update the -per model- uniforms (i.e.
+		//model matrices, colors, etc.)
+		//first get the model matrix:
+		glm::mat4 modelMatrix = sO->GetModelMatrix();
+		//then update the shader
+		this->GetShader()->setMat4("model", modelMatrix);
+
+		//get the R G B and A components of the debug color
+		//of the model
+		float r = (float)sO->GetDebugColor().r;
+		float g = (float)sO->GetDebugColor().g;
+		float b = (float)sO->GetDebugColor().b;
+		float a = (float)sO->GetDebugColor().a;
+		//scale them to be between 0 and 1 (divide by 255)
+		r /= 255.0f;
+		g /= 255.0f;
+		b /= 255.0f;
+		a /= 255.0f;
+		//now, make  the color a vec4
+		glm::vec4 debugColor = glm::vec4(r, g, b, a);
+		//next, do the debug color to test things
+		this->GetShader()->setVec4("debugColor", debugColor);
+
+		//do the same for the flat color (wow, this is a pain! maybe I should fix that.)
+		r = (float)sO->GetFlatColor().r;
+		g = (float)sO->GetFlatColor().g;
+		b = (float)sO->GetFlatColor().b;
+		a = (float)sO->GetFlatColor().a;
+		//scale them to be between 0 and 1 (divide by 255)
+		r /= 255.0f;
+		g /= 255.0f;
+		b /= 255.0f;
+		a /= 255.0f;
+		//now, make  the color a vec4
+		glm::vec4 flatColor = glm::vec4(r, g, b, a);
+		//update the flat color uniform
+		this->GetShader()->setVec4("flatColor", flatColor);
+
+		//next, update the shader based on the object type:
+		this->GetShader()->setInt("shaderType", sO->GetShaderType());
+		//then render the object
+		sO->RenderObject();
+	}
+
+	//done with transparencies; turn on depth mask again
+	glDepthMask(true);
+	
+
+	//std::cout << glGetError() << std::endl;
 	
 
 	

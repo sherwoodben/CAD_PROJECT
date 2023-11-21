@@ -25,52 +25,68 @@
 class CAD_APP
 {
 public:
+	//constructor
 	CAD_APP() {};
+	//and destructor
 	~CAD_APP();
 
-	bool InitializeApp();
-
-	void MainLoop();
-
-	GLFWwindow* GetMainWindow() { return this->applicationWindow; };
-	CAD_SCENE* GetCurrentScene() { return this->currentScene; };
-
-	bool ShouldClose() { return glfwWindowShouldClose(this->GetMainWindow()); };
-
+	//we need a way to send/receive messages,
+	//so we use our MessageManager
 	static MessageManager messageManager;
 
-private:
+	//"head" initialization function
+	bool InitializeApp();
 
+	//"head" main loop function
+	void MainLoop();
+
+	//returns if we want to close the window or not
+	bool ShouldClose() { return glfwWindowShouldClose(this->applicationWindow); };
+
+	//get pointers to the application window and the current scene
+	CAD_SCENE* GetCurrentScene() { return this->currentScene; };
+
+private:
+	//pointers to the main window and current scene
 	GLFWwindow* applicationWindow = nullptr;
 	CAD_SCENE* currentScene = nullptr;
 
-	Shader* defaultApplicationShader = nullptr;
+	//pointer to the application shader
+	Shader* applicationShader = nullptr;
 
-	
-
-	
-	void ShutdownApp();
-
-	static void windowResizeCallback(GLFWwindow* resizedWindow, int newWidth, int newHeight);
-	static void mouseButtonCallBack(GLFWwindow* relevantWindow, int button, int action, int mods);
-	static void mouseScrollCallback(GLFWwindow* relevantWindow, double xOffset, double yOffset);
-
-	void RegisterCallbacks();
+	//initialization functions
 	bool InitializeGlfw();
 	bool InitializeGlad();
 	bool InitializeDearImGui();
 	bool InitializeShader();
-
 	void InitializeDirectories();
 
+	//register callback "head" function
+	//(happens in initialization)
+	void RegisterCallbacks();
+	//callback functions
+	static void windowResizeCallback(GLFWwindow* resizedWindow, int newWidth, int newHeight);
+	static void mouseButtonCallback(GLFWwindow* relevantWindow, int button, int action, int mods);
+	static void mouseScrollCallback(GLFWwindow* relevantWindow, double xOffset, double yOffset);
+	static void keyCallback(GLFWwindow* relevantWindow, int key, int scanCode, int action, int mods);
+
+	//start a new DearImgui frame
 	void NewImGuiFrame();
-	void ProcessMessages();
+
+	//update the application
 	void Update();
+
+	//render the application
 	void Render();
-	void RenderOpenGL();
+	//render the DearImgui portion of
+	//the application
 	void RenderGUI();
 
+	//load scene in various ways
 	bool LoadSceneFromFile(std::string scenePath);
 	CAD_SCENE* LoadEmptyScene();
+
+	//shutdown the app
+	void ShutdownApp();
 
 };

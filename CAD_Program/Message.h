@@ -9,7 +9,6 @@ struct Message
 	std::string messageData;
 };
 
-
 class MessageManager
 {
 private:

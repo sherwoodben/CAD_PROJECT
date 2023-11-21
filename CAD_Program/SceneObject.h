@@ -22,6 +22,7 @@ enum ShaderType
 {
 	DEBUG,
 	PLANE_GRID,
+	AXIS,
 	FLAT,
 };
 
@@ -49,11 +50,13 @@ public:
 	//object; each type of object will implement
 	//a different method of rendering
 	virtual void RenderObject() {};
+	void RenderAsTriangles(unsigned int numIndices);
 
 	//virtual function that deletes an object (if
 	//that's allowed); different objects will implement
 	//a different method
 	virtual void DeleteObject() {};
+	void DeleteBuffers();
 
 	//we need a way to retrieve the VBO (ID)
 	unsigned int* GetObjectVBOPointer() { return &this->VBO; };
@@ -61,6 +64,9 @@ public:
 	unsigned int* GetObjectVAOPointer() { return &this->VAO; };
 	//we need a way to retrieve the EBO (ID)
 	unsigned int* GetObjectEBOPointer() { return &this->EBO; };
+
+	//most objects reuse similar "setup" code
+	void SetUpBuffers(float* vertexArray, unsigned int numVertices, unsigned int* indexArray, unsigned int numIndices);
 
 	//gets the model matrix of the object
 	virtual glm::mat4 GetModelMatrix();
@@ -91,13 +97,13 @@ public:
 private:
 	//an ID for this SceneObject's VBO
 	//(vertex buffer object)
-	unsigned int VBO;
+	unsigned int VBO = 0;
 	//an ID for this SceneObject's VAO
 	//(vertex array object)
-	unsigned int VAO;
+	unsigned int VAO = 0;
 	//an ID for this SceneObject's EBO
 	//(element buffer array)
-	unsigned int EBO;
+	unsigned int EBO = 0;
 	//an int to keep track of the shader type; defined
 	//elsewhere
 	ShaderType shaderType = ShaderType::DEBUG;
