@@ -51,7 +51,7 @@ glm::mat4 Camera::GetProjectionMatrix(float window_aspect_ratio)
     
 }
 
-void Camera::GoToDefinedView(Camera::DefinedView desiredView, CameraState savedCamera)
+void Camera::GoToDefinedView(CameraState::DefinedView desiredView, CameraState savedCamera)
 {
 	float currentZoom = this->cameraState.cameraZoom;
 	bool currentOrtho = this->cameraState.cameraIsOrthographic;
@@ -60,36 +60,36 @@ void Camera::GoToDefinedView(Camera::DefinedView desiredView, CameraState savedC
 	CameraState desiredCameraState;
 	switch (desiredView)
 	{
-	case Camera::FRONT:
+	case CameraState::DefinedView::FRONT:
 		desiredCameraState.cameraPosition = {0.0f, -1.0f, 0.0f};
 		desiredCameraState.cameraRight = { 1.0f, 0.0f, 0.0f };
 		break;
-	case Camera::RIGHT:
+	case CameraState::DefinedView::RIGHT:
 		desiredCameraState.cameraPosition = { 1.0f, 0.0f, 0.0f };
 		desiredCameraState.cameraRight = { 0.0f, 1.0f, 0.0f };
 		break;
-	case Camera::TOP:
+	case CameraState::DefinedView::TOP:
 		desiredCameraState.cameraPosition = { 0.0f, 0.0f, 1.0f };
 		desiredCameraState.cameraRight = { 1.0f, 0.0f, 0.0f };
 		break;
-	case Camera::ISOMETRIC:
+	case CameraState::DefinedView::ISOMETRIC:
 		desiredCameraState.cameraPosition = { 1.0f, 1.0f, 1.0f };
 		desiredCameraState.cameraRight = { -1.0f, 1.0f, 0.0f };
 		desiredCameraState.cameraUp = { -1.0f, -1.0f, 1.0f };
 		break;
-	case Camera::BACK:
+	case CameraState::DefinedView::BACK:
 		desiredCameraState.cameraPosition = { 0.0f, 1.0f, 0.0f };
 		desiredCameraState.cameraRight = { -1.0f, 0.0f, 0.0f };
 		break;
-	case Camera::LEFT:
+	case CameraState::DefinedView::LEFT:
 		desiredCameraState.cameraPosition = { -1.0f, 0.0f, 0.0f };
 		desiredCameraState.cameraRight = { 0.0f, -1.0f, 0.0f };
 		break;
-	case Camera::BOTTOM:
+	case CameraState::DefinedView::BOTTOM:
 		desiredCameraState.cameraPosition = { 0.0f, 0.0f, -1.0f };
 		desiredCameraState.cameraRight = { 1.0f, 0.0f, 0.0f };
 		break;
-	case Camera::SAVED:
+	case CameraState::DefinedView::SAVED:
 		desiredCameraState = savedCamera;
 		break;
 	default:
@@ -110,8 +110,6 @@ void Camera::GoToDefinedView(Camera::DefinedView desiredView, CameraState savedC
 
 void Camera::PerspectiveUpdate()
 {
-	glm::vec3 newCameraPos = this->cameraState.cameraPosition - this->cameraState.cameraTarget;
-
 	if (this->cameraState.cameraZoom > 10.0f)
 	{
 		this->cameraState.cameraZoom = 10.0f;
@@ -120,18 +118,10 @@ void Camera::PerspectiveUpdate()
 	{
 		this->cameraState.cameraZoom = 0.25f;
 	}
-	newCameraPos = glm::normalize(newCameraPos);
-	newCameraPos = { newCameraPos.x * this->cameraState.cameraZoom, newCameraPos.y * this->cameraState.cameraZoom, newCameraPos.z * this->cameraState.cameraZoom };
-
-	newCameraPos += this->cameraState.cameraTarget;
-	this->cameraState.cameraPosition = newCameraPos;
-	this->cameraState.cameraUp = glm::cross(glm::vec3(this->cameraState.cameraPosition - this->cameraState.cameraTarget), this->cameraState.cameraRight);
 }
 
 void Camera::OrthographicUpdate()
 {
-	glm::vec3 newCameraPos = this->cameraState.cameraPosition - this->cameraState.cameraTarget;
-
 	if (this->cameraState.cameraZoom > 0.05f)
 	{
 		this->cameraState.cameraZoom = 0.05f;
@@ -140,13 +130,6 @@ void Camera::OrthographicUpdate()
 	{
 		this->cameraState.cameraZoom = 0.001f;
 	}
-
-	newCameraPos = glm::normalize(newCameraPos);
-	newCameraPos = { newCameraPos.x , newCameraPos.y , newCameraPos.z  };
-
-	newCameraPos += this->cameraState.cameraTarget;
-	this->cameraState.cameraPosition = newCameraPos;
-	this->cameraState.cameraUp = glm::cross(glm::vec3(this->cameraState.cameraPosition - this->cameraState.cameraTarget), this->cameraState.cameraRight);
 }
 
 void Camera::TranslateCam(double deltaX, double deltaY)
@@ -159,6 +142,20 @@ void Camera::TranslateCam(double deltaX, double deltaY)
 	this->cameraState.cameraPosition += glm::vec3(deltaY * this->cameraState.cameraUp.x, deltaY * this->cameraState.cameraUp.y, deltaY * this->cameraState.cameraUp.z);
 }
 
+void Camera::UpdatePosition()
+{
+	glm::vec3 newCameraPos = this->cameraState.cameraPosition - this->cameraState.cameraTarget;
+
+	newCameraPos = glm::normalize(newCameraPos);
+	if (!this->cameraState.cameraIsOrthographic)
+	{
+		newCameraPos = { newCameraPos.x * this->cameraState.cameraZoom, newCameraPos.y * this->cameraState.cameraZoom, newCameraPos.z * this->cameraState.cameraZoom };
+	}
+	newCameraPos += this->cameraState.cameraTarget;
+	this->cameraState.cameraPosition = newCameraPos;
+	this->cameraState.cameraUp = glm::cross(glm::vec3(this->cameraState.cameraPosition - this->cameraState.cameraTarget), this->cameraState.cameraRight);
+}
+
 void Camera::ChangeZoom(float zoomDelta)
 {
 	this->cameraState.cameraZoom += zoomDelta * 0.125 * this->cameraState.cameraZoom;
@@ -168,16 +165,13 @@ void Camera::UpdateCamera()
 {	
 	if (!this->cameraState.cameraIsOrthographic)
 	{
-		this->PerspectiveUpdate();
-		
-		
+		this->PerspectiveUpdate();		
 	}
 	else
 	{
 		this->OrthographicUpdate();
-		
 	}
-	
+	this->UpdatePosition();
 }
 
 void Camera::ArcBall(double angleX, double angleY)

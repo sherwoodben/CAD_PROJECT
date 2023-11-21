@@ -87,9 +87,6 @@
     <ClCompile Include="Plane.cpp">
       <Filter>Source Files\Objects\Scene Objects</Filter>
     </ClCompile>
-    <ClCompile Include="Message.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Axis.cpp">
       <Filter>Source Files\Objects\Scene Objects</Filter>
     </ClCompile>

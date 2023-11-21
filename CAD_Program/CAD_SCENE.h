@@ -39,7 +39,7 @@ struct SceneState
 	//things more "compact"
 
 	Camera SceneCamera = Camera();
-	CameraState SavedCamera = CameraState();
+	CameraState SavedView = CameraState();
 
 	bool SceneUpToDate = true;
 
@@ -67,37 +67,27 @@ public:
 	void AddSceneObject(SceneObject* objectToAdd);
 	std::vector<SceneObject*> GetSceneObjects() { return this->sceneObjects; };
 
-	void SetCameraView(Camera::DefinedView desiredView);
-	void SaveCameraView() { this->sceneState.SavedCamera = this->GetCamera()->GetCameraState(); };
-	Camera* GetCamera() { return &this->sceneState.SceneCamera; };
+	void DoArcBallCam();
+	void DoTranslateCam();
+	void SetCameraView(CameraState::DefinedView desiredView);
+	void SaveCameraView() { this->sceneState.SavedView = this->sceneState.SceneCamera.GetCameraState(); };
 
-	void SetAspectRatio(float newAspectRatio) { this->sceneState.ScreenAspectRatio = newAspectRatio; };
-	float GetAspectRatio() { return this->sceneState.ScreenAspectRatio; };
-
-	bool HasChanges() { return !this->upToDate; }
+	bool HasChanges() { return !this->sceneState.SceneUpToDate; }
 
 	void ProcessMessage(Message msg);
 
+	void UpdateScene();
 	void UpdateMousePosition();
 	void UpdateScreenProperties();
-	void UpdateScene();
-	void RenderScene();
 
+	void RenderScene();
 
 	void CloseScene();
 
 private:
 
-	//keeps track of if everything within
-	//the scene is updated
-	bool upToDate = true;
-
 	//a vector to keep track of SceneObjects
 	std::vector<SceneObject*> sceneObjects;
-
-	//a value we'll increment every time we add
-	//a camera to generate a "unique ID"
-	unsigned int cameraIterator = 0;
 
 	//keep track of the scene's shader so we can
 	//update variables within the shader during

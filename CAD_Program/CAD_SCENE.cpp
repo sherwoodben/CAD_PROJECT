@@ -70,15 +70,37 @@ void CAD_SCENE::AddSceneObject(SceneObject* objectToAdd)
 	this->sceneObjects.push_back(objectToAdd);
 }
 
-void CAD_SCENE::SetCameraView(Camera::DefinedView desiredView)
+void CAD_SCENE::DoArcBallCam()
 {
-	if (desiredView == Camera::DefinedView::SAVED)
+	double dAngleX = (2.0f * glm::pi<double>()) / (double)this->sceneState.ScreenDimensions[0];
+	double dAngleY = (2.0f * glm::pi<double>()) / (double)this->sceneState.ScreenDimensions[1];
+
+	double xAngle = -this->sceneState.ArcDragVector[0] * dAngleX;
+	double yAngle = -this->sceneState.ArcDragVector[1] * dAngleY;
+
+	this->sceneState.SceneCamera.ArcBall(xAngle, yAngle);
+}
+
+void CAD_SCENE::DoTranslateCam()
+{
+	double dDeltaX = 1.0f / (double)this->sceneState.ScreenDimensions[0];
+	double dDeltaY = 1.0f / (double)this->sceneState.ScreenDimensions[1];
+
+	double deltaX = this->sceneState.ArcDragVector[0] * dDeltaX;
+	double deltaY = -this->sceneState.ArcDragVector[1] * dDeltaY;
+
+	this->sceneState.SceneCamera.TranslateCam(deltaX, deltaY);
+}
+
+void CAD_SCENE::SetCameraView(CameraState::DefinedView desiredView)
+{
+	if (desiredView == CameraState::DefinedView::SAVED)
 	{
-		this->GetCamera()->GoToDefinedView(desiredView, this->sceneState.SavedCamera);
+		this->sceneState.SceneCamera.GoToDefinedView(desiredView, this->sceneState.SavedView);
 	}
 	else
 	{
-		this->GetCamera()->GoToDefinedView(desiredView);
+		this->sceneState.SceneCamera.GoToDefinedView(desiredView);
 	}
 }
 
@@ -107,9 +129,9 @@ void CAD_SCENE::ProcessMessage(Message msg)
 
 		float zoomDelta = std::stof(msg.messageData);
 
-		if (this->GetCamera())
+		if (&this->sceneState.SceneCamera != nullptr)
 		{
-			this->GetCamera()->ChangeZoom(zoomDelta);
+			this->sceneState.SceneCamera.ChangeZoom(zoomDelta);
 		}
 	}
 
@@ -127,38 +149,38 @@ void CAD_SCENE::ProcessMessage(Message msg)
 	{
 		if (!this->sceneState.ShiftModifier)
 		{
-			this->SetCameraView(Camera::DefinedView::FRONT);
+			this->SetCameraView(CameraState::DefinedView::FRONT);
 		}
 		else
 		{
-			this->SetCameraView(Camera::DefinedView::BACK);
+			this->SetCameraView(CameraState::DefinedView::BACK);
 		}
 	}
 	if (msg.messageType == "NUM_2" && msg.messageData == "PRESSED")
 	{
 		if (!this->sceneState.ShiftModifier)
 		{
-			this->SetCameraView(Camera::DefinedView::RIGHT);
+			this->SetCameraView(CameraState::DefinedView::RIGHT);
 		}
 		else
 		{
-			this->SetCameraView(Camera::DefinedView::LEFT);
+			this->SetCameraView(CameraState::DefinedView::LEFT);
 		}
 	}
 	if (msg.messageType == "NUM_3" && msg.messageData == "PRESSED")
 	{
 		if (!this->sceneState.ShiftModifier)
 		{
-			this->SetCameraView(Camera::DefinedView::TOP);
+			this->SetCameraView(CameraState::DefinedView::TOP);
 		}
 		else
 		{
-			this->SetCameraView(Camera::DefinedView::BOTTOM);
+			this->SetCameraView(CameraState::DefinedView::BOTTOM);
 		}
 	}
 	if (msg.messageType == "NUM_4" && msg.messageData == "PRESSED")
 	{
-		this->SetCameraView(Camera::DefinedView::ISOMETRIC);
+		this->SetCameraView(CameraState::DefinedView::ISOMETRIC);
 	}
 	
 }
@@ -189,7 +211,7 @@ void CAD_SCENE::UpdateScreenProperties()
 
 void CAD_SCENE::UpdateScene()
 {
-	Camera* cam = this->GetCamera();
+	Camera* cam = &this->sceneState.SceneCamera;
 
 	this->UpdateScreenProperties();
 	this->UpdateMousePosition();
@@ -202,31 +224,16 @@ void CAD_SCENE::UpdateScene()
 		//("orbit camera" type mode)
 		if (this->sceneState.ArcBallMode && !this->sceneState.ShiftModifier)
 		{
-			double dAngleX = (2.0f * glm::pi<double>()) / (double)this->sceneState.ScreenDimensions[0];
-			double dAngleY = (2.0f * glm::pi<double>()) / (double)this->sceneState.ScreenDimensions[1];
-
-			double xAngle = -this->sceneState.ArcDragVector[0] * dAngleX;
-			double yAngle = -this->sceneState.ArcDragVector[1] * dAngleY;
-
-			cam->ArcBall(xAngle, yAngle);
+			this->DoArcBallCam();
+			
 		}
 		//if we have translate control for view enabled (YES SHIFT):
 		//("pan" type mode)
 		else if (this->sceneState.ArcBallMode && this->sceneState.ShiftModifier)
 		{
-			double dDeltaX = 1.0f / (double)this->sceneState.ScreenDimensions[0];
-			double dDeltaY = 1.0f / (double)this->sceneState.ScreenDimensions[1];
-
-			double deltaX = this->sceneState.ArcDragVector[0] * dDeltaX;
-			double deltaY = -this->sceneState.ArcDragVector[1] * dDeltaY;
-
-			cam->TranslateCam(deltaX, deltaY);
+			this->DoTranslateCam();
 		}
-
 	}
-	
-	std::cout << "Shift: " << this->sceneState.ShiftModifier << "; Alt: " << this->sceneState.AltModifier << std::endl;
-
 }
 
 void CAD_SCENE::RenderScene()
@@ -249,9 +256,9 @@ void CAD_SCENE::RenderScene()
 	//matrix" and "view matrix" from that camera:
 	
 	//first the projection matrix
-	glm::mat4 projectionMatrix = this->GetCamera()->GetProjectionMatrix(this->GetAspectRatio());
+	glm::mat4 projectionMatrix = this->sceneState.SceneCamera.GetProjectionMatrix(this->sceneState.ScreenAspectRatio);
 	//and get the view matrix
-	glm::mat4 viewMatrix = this->GetCamera()->GetViewMatrix();
+	glm::mat4 viewMatrix = this->sceneState.SceneCamera.GetViewMatrix();
 
 	//update the uniforms for the shader with the camera matrices
 	this->GetShader()->setMat4("projection", projectionMatrix);

@@ -160,7 +160,6 @@
     <ClCompile Include="CAD_SCENE.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Message.cpp" />
     <ClCompile Include="Plane.cpp" />
     <ClCompile Include="SceneObject.cpp" />
     <ClCompile Include="Shader.cpp" />

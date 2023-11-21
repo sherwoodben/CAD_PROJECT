@@ -7,16 +7,16 @@ MessageManager CAD_APP::messageManager = MessageManager();
 void CAD_APP::RegisterCallbacks()
 {
 	//set the framebuffer size callback
-	glfwSetFramebufferSizeCallback(this->GetMainWindow(), CAD_APP::windowResizeCallback);
+	glfwSetFramebufferSizeCallback(this->applicationWindow, CAD_APP::windowResizeCallback);
 
 	//set the mouse buttons callback
-	glfwSetMouseButtonCallback(this->GetMainWindow(), CAD_APP::mouseButtonCallback);
+	glfwSetMouseButtonCallback(this->applicationWindow, CAD_APP::mouseButtonCallback);
 
 	//set the mouse scroll wheel callback
-	glfwSetScrollCallback(this->GetMainWindow(), CAD_APP::mouseScrollCallback);
+	glfwSetScrollCallback(this->applicationWindow, CAD_APP::mouseScrollCallback);
 
 	//set the keyboard press callback
-	glfwSetKeyCallback(this->GetMainWindow(), CAD_APP::keyCallback);
+	glfwSetKeyCallback(this->applicationWindow, CAD_APP::keyCallback);
 
 }
 
@@ -29,9 +29,6 @@ void CAD_APP::MainLoop()
 {
 	//start a new Dear ImGui frame:
 	this->NewImGuiFrame();
-
-	//process input:
-	this->ProcessMessages();
 
 	//update application:
 	this->Update();
@@ -87,31 +84,31 @@ void CAD_APP::mouseButtonCallback(GLFWwindow* relevantWindow, int button, int ac
 
 	}
 
-	if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+	else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
 	{
 		//std::cout << "Middle mouse button pressed." << std::endl;
 		msg = { "M_MOUSE", "PRESSED" };
 	}
 
-	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+	else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
 	{
 		//std::cout << "Right mouse button pressed." << std::endl;
 		msg = { "R_MOUSE", "PRESSED" };
 	}
 
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+	else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
 	{
 		//std::cout << "Left mouse button released." << std::endl;
 		msg = { "L_MOUSE", "RELEASED" };
 	}
 
-	if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
+	else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
 	{
 		//std::cout << "Middle mouse button released." << std::endl;
 		msg = { "M_MOUSE", "RELEASED" };
 	}
 
-	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+	else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
 	{
 		//std::cout << "Right mouse button released." << std::endl;
 		msg = { "R_MOUSE", "RELEASED" };
@@ -212,14 +209,14 @@ bool CAD_APP::InitializeGlfw()
 
 	//create the  window:
 	this->applicationWindow = glfwCreateWindow(640, 480, "Default Window", NULL, NULL);
-	if (!this->GetMainWindow())
+	if (!this->applicationWindow)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
 		return false;
 	}
 
 	//we made a window, now make that window the current context
-	glfwMakeContextCurrent(this->GetMainWindow());
+	glfwMakeContextCurrent(this->applicationWindow);
 
 	//register callbacks
 	this->RegisterCallbacks();
@@ -249,7 +246,7 @@ bool CAD_APP::InitializeDearImGui()
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 
 	//setup platform/rendererr bindings:
-	if (!ImGui_ImplGlfw_InitForOpenGL(this->GetMainWindow(), true))
+	if (!ImGui_ImplGlfw_InitForOpenGL(this->applicationWindow, true))
 	{
 		return false;
 	}
@@ -288,19 +285,14 @@ void CAD_APP::NewImGuiFrame()
 	ImGui::NewFrame();
 }
 
-
-void CAD_APP::ProcessMessages()
+void CAD_APP::Update()
 {
 	//send the latest messages from the manager
 	while (CAD_APP::messageManager.QueueHasMessages())
 	{
 		this->currentScene->ProcessMessage(messageManager.DispatchMessage());
 	}
-	
-}
 
-void CAD_APP::Update()
-{
 	this->currentScene->UpdateScene();
 }
 
@@ -313,15 +305,10 @@ void CAD_APP::Render()
 	this->RenderGUI();
 
 	//swap glfwbuffers
-	glfwSwapBuffers(this->GetMainWindow());
+	glfwSwapBuffers(this->applicationWindow);
 
 	//poll events
 	glfwPollEvents();
-}
-
-void CAD_APP::RenderOpenGL()
-{
-
 }
 
 void CAD_APP::RenderGUI()
@@ -332,45 +319,35 @@ void CAD_APP::RenderGUI()
 	ImGui::Begin("Scene Tree:");
 
 	//first, display the camera options
-	if (this->GetCurrentScene()->GetCamera()->GetCameraState().cameraIsOrthographic == true)
+	if (this->currentScene->sceneState.SceneCamera.GetCameraState().cameraIsOrthographic == true)
 	{
 		if (ImGui::Button("Toggle Perspective"))
 		{
-			this->GetCurrentScene()->GetCamera()->SetPerspectiveMode();
+			this->currentScene->sceneState.SceneCamera.SetPerspectiveMode();
 		}
 	}
-	else if (this->GetCurrentScene()->GetCamera()->GetCameraState().cameraIsOrthographic == false)
+	else if (this->currentScene->sceneState.SceneCamera.GetCameraState().cameraIsOrthographic == false)
 	{
 		if (ImGui::Button("Toggle Orthographic"))
 		{
-			this->GetCurrentScene()->GetCamera()->SetOrthographicMode();
+			this->currentScene->sceneState.SceneCamera.SetOrthographicMode();
 		}
 	}
 	if (ImGui::Button("Reset Camera"))
 	{
-		this->GetCurrentScene()->SetCameraView(Camera::DefinedView::RESET);
+		this->currentScene->SetCameraView(CameraState::DefinedView::RESET);
 	}
 	if (ImGui::Button("Save Camera View"))
 	{
-		this->GetCurrentScene()->SaveCameraView();
+		this->currentScene->SaveCameraView();
 	}
 	if (ImGui::Button("Load Camera View"))
 	{
-		this->GetCurrentScene()->SetCameraView(Camera::DefinedView::SAVED);
+		this->currentScene->SetCameraView(CameraState::DefinedView::SAVED);
 	}
-	
-	bool test;
-	if(ImGui::RadioButton("Test", &test))
-	{
-	}
-	float testing;
-	if (ImGui::DragFloat("Test 2", &testing))
-	{
-	};
-
 
 	//then list the objects
-	for (SceneObject* sO : this->GetCurrentScene()->GetSceneObjects() )
+	for (SceneObject* sO : this->currentScene->GetSceneObjects() )
 	{
 		//if this is a default object, display in a different color:
 		if (sO->isDefaultObject)
