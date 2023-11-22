@@ -18,6 +18,7 @@
 #include "imgui_impl_opengl3.h"
 
 //now we include the files I made:
+#include "AppGUI.h"
 #include "CAD_SCENE.h"
 #include "Shader.h"
 #include "Message.h"
@@ -46,6 +47,11 @@ public:
 	//get pointers to the application window and the current scene
 	CAD_SCENE* GetCurrentScene() { return this->currentScene; };
 
+	//get a pointer to the window (need this for AppGUI to work)
+	GLFWwindow* GetApplicationWindow() { return this->applicationWindow; };
+
+	MenuFlags* GetMenuFlag() { return &this->appMenuFlags; };
+
 private:
 	//pointers to the main window and current scene
 	GLFWwindow* applicationWindow = nullptr;
@@ -53,6 +59,9 @@ private:
 
 	//pointer to the application shader
 	Shader* applicationShader = nullptr;
+
+	//Application GUI flag(s)
+	MenuFlags appMenuFlags;
 
 	//initialization functions
 	bool InitializeGlfw();

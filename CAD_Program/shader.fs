@@ -28,11 +28,18 @@ void main()
 	{
 		resultingColor = DoPlaneGrid(gridCoordinates);
 	}
+	//AXIS
 	else if (shaderType == 2)
 	{
 		resultingColor = flatColor;
 	}
+	//POINT
 	else if (shaderType == 3)
+	{
+		resultingColor = flatColor;
+	}
+	//FLAT
+	else if (shaderType == 4)
 	{
 		resultingColor = flatColor;
 	}

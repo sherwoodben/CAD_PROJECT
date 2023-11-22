@@ -124,7 +124,7 @@ glm::mat4 Axis::GetModelMatrix()
     modelMatrix = translateMatrix * rotationMatrix * scaleMatrix;
 
 
-;   return modelMatrix;
+    return modelMatrix;
 }
 
 void Axis::DeleteObject()
@@ -134,6 +134,9 @@ void Axis::DeleteObject()
 
 void Axis::InitAxis()
 {
+    //first of all, this is a datum object
+    this->isDatumObject = true;
+
     //update the object type
     this->objectType = "Axis";
     //and the shader type

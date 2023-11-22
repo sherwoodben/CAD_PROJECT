@@ -155,12 +155,14 @@
     <ClCompile Include="..\imgui\imgui_stdlib.cpp" />
     <ClCompile Include="..\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="AppGUI.cpp" />
     <ClCompile Include="Axis.cpp" />
     <ClCompile Include="CAD_APP.cpp" />
     <ClCompile Include="CAD_SCENE.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Plane.cpp" />
+    <ClCompile Include="Point.cpp" />
     <ClCompile Include="SceneObject.cpp" />
     <ClCompile Include="Shader.cpp" />
   </ItemGroup>
@@ -181,6 +183,8 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Message.h" />
     <ClInclude Include="Plane.h" />
+    <ClInclude Include="AppGUI.h" />
+    <ClInclude Include="Point.h" />
     <ClInclude Include="SceneObject.h" />
     <ClInclude Include="Shader.h" />
   </ItemGroup>

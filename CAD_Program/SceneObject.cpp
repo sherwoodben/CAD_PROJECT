@@ -1,4 +1,5 @@
 #include "SceneObject.h"
+#include "Shader.h"
 
 void SceneObject::RenderAsTriangles(unsigned int numIndices)
 {
@@ -77,4 +78,43 @@ void SceneObject::SetUpBuffers(float* vertexArray, unsigned int numVertices, uns
 	glBindVertexArray(0);
 }
 
+void SceneObject::PassShaderData(Shader* shader)
+{
+	//then update the shader
+	shader->setMat4("model", this->GetModelMatrix());
+
+	//get the R G B and A components of the debug color
+	//of the model
+	float r = (float)this->GetDebugColor().r;
+	float g = (float)this->GetDebugColor().g;
+	float b = (float)this->GetDebugColor().b;
+	float a = (float)this->GetDebugColor().a;
+	//scale them to be between 0 and 1 (divide by 255)
+	r /= 255.0f;
+	g /= 255.0f;
+	b /= 255.0f;
+	a /= 255.0f;
+	//now, make  the color a vec4
+	glm::vec4 debugColor = glm::vec4(r, g, b, a);
+	//next, do the debug color to test things
+	shader->setVec4("debugColor", debugColor);
+
+	//do the same for the flat color (wow, this is a pain! maybe I should fix that.)
+	r = (float)this->GetFlatColor().r;
+	g = (float)this->GetFlatColor().g;
+	b = (float)this->GetFlatColor().b;
+	a = (float)this->GetFlatColor().a;
+	//scale them to be between 0 and 1 (divide by 255)
+	r /= 255.0f;
+	g /= 255.0f;
+	b /= 255.0f;
+	a /= 255.0f;
+	//now, make  the color a vec4
+	glm::vec4 flatColor = glm::vec4(r, g, b, a);
+	//update the flat color uniform
+	shader->setVec4("flatColor", flatColor);
+
+	//next, update the shader based on the object type:
+	shader->setInt("shaderType", this->GetShaderType());
+}
 

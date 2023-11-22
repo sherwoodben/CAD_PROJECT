@@ -12,8 +12,9 @@
 //include relevant scene files
 #include "Message.h"
 #include "SceneObject.h"
-#include "Plane.h"
+#include "Point.h"
 #include "Axis.h"
+#include "Plane.h"
 #include "Camera.h"
 #include "Shader.h"
 
@@ -32,11 +33,7 @@ struct SceneState
 
 	double MousePos[2] = { 0.0f, 0.0f };
 
-	bool WireFrameMode = false;
-	bool DebugVisualsMode = false;
-
-	//Maybe add the camera here? Could make
-	//things more "compact"
+	bool ShowDatumObjects = true;
 
 	Camera SceneCamera = Camera();
 	CameraState SavedView = CameraState();
@@ -45,17 +42,22 @@ struct SceneState
 
 };
 
+class CAD_APP;
+
 class CAD_SCENE
 {
 public:
 	//constructor(s) amd destructor
-	CAD_SCENE();
-	CAD_SCENE(std::string loadPath);
+	CAD_SCENE(CAD_APP* parentApp) : parentApplication(parentApp) { this->LoadDefaultObjects(); };
+	CAD_SCENE(CAD_APP* parentApp, std::string loadPath) : parentApplication(parentApp) { this->LoadDefaultObjects(); };
 	~CAD_SCENE();
 
 	//Scene state information; turning this into a
 	//struct now
 	SceneState sceneState;
+
+	//get the parent app
+	CAD_APP* GetParentApplication() { return this->parentApplication; };
 	
 	Shader* GetShader() { return this->sceneShader; };
 	void SetShader(Shader* shader) { this->sceneShader = shader; };
@@ -66,6 +68,7 @@ public:
 
 	void AddSceneObject(SceneObject* objectToAdd);
 	std::vector<SceneObject*> GetSceneObjects() { return this->sceneObjects; };
+	std::vector<SceneObject*> GetDatumObjects() { return this->datumObjects; };
 
 	void DoArcBallCam();
 	void DoTranslateCam();
@@ -75,6 +78,8 @@ public:
 	bool HasChanges() { return !this->sceneState.SceneUpToDate; }
 
 	void ProcessMessage(Message msg);
+	void HandleDeleteObjectMessage(std::string objToDelete);
+	void HandleNewObjectMessage(std::string typeToAdd);
 
 	void UpdateScene();
 	void UpdateMousePosition();
@@ -89,9 +94,15 @@ private:
 	//a vector to keep track of SceneObjects
 	std::vector<SceneObject*> sceneObjects;
 
+	//a vector to keep track of DATUM SceneObjects
+	std::vector<SceneObject*> datumObjects;
+
 	//keep track of the scene's shader so we can
 	//update variables within the shader during
 	//rendering
 	Shader* sceneShader = nullptr;
+
+	//a pointer to the application
+	CAD_APP* parentApplication = nullptr;
 };
 

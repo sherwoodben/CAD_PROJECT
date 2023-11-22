@@ -60,6 +60,7 @@ Plane::Plane(const char* basisDirection)
 
 void Plane::RenderObject()
 {
+	
 	//we have 6 indices making up the triangles
 	this->RenderAsTriangles(6);
 }
@@ -96,6 +97,9 @@ void Plane::DeleteObject()
 
 void Plane::InitPlane()
 {
+	//first of all, this is a datum object
+	this->isDatumObject = true;
+
 	//update the object type
 	this->objectType = "Plane";
 	//and the shader type
