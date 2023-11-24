@@ -3,7 +3,8 @@
 #include "CAD_SCENE.h"
 #include "Point.h"
 
-float MenuFlags::tempPoint[3] = {0.0f, 0.0f, 0.0f};
+float MenuFlags::tempPoint1[3] = { 0.0f, 0.0f, 0.0f };
+float MenuFlags::tempPoint2[3] = {0.0f, 0.0f, 0.0f};
 char MenuFlags::defaultObjectName[16] = "DEFAULT NAME";
 
 void AppGUI::RenderMenuBar(float& yOffset, CAD_APP* currentAppInstance)
@@ -48,10 +49,12 @@ void AppGUI::RenderMenuBar(float& yOffset, CAD_APP* currentAppInstance)
 				if (ImGui::MenuItem("Axis"))
 				{
 					currentAppInstance->messageManager.ReceiveMessage({ "NEW_OBJECT", "AXIS" });
+					currentAppInstance->GetMenuFlag()->newAxisDialogue = true;
 				}
 				if (ImGui::MenuItem("Plane"))
 				{
 					currentAppInstance->messageManager.ReceiveMessage({ "NEW_OBJECT", "PLANE" });
+					currentAppInstance->GetMenuFlag()->newPlaneDialogue = true;
 				}
 				ImGui::EndMenu();
 			}
@@ -85,12 +88,12 @@ void AppGUI::RenderMenuBar(float& yOffset, CAD_APP* currentAppInstance)
 		//help
 		if (ImGui::BeginMenu("View"))
 		{
-			if (currentAppInstance->GetCurrentScene()->sceneState.SceneCamera.GetCameraState().cameraIsOrthographic &&
+			if (currentAppInstance->GetCurrentScene()->sceneState.SceneCamera.GetCameraState()->cameraIsOrthographic &&
 				ImGui::MenuItem("Toggle Perspective"))
 			{
 				currentAppInstance->GetCurrentScene()->sceneState.SceneCamera.SetPerspectiveMode();
 			}
-			else if (!currentAppInstance->GetCurrentScene()->sceneState.SceneCamera.GetCameraState().cameraIsOrthographic &&
+			else if (!currentAppInstance->GetCurrentScene()->sceneState.SceneCamera.GetCameraState()->cameraIsOrthographic &&
 				ImGui::MenuItem("Toggle Orthographic"))
 			{
 				currentAppInstance->GetCurrentScene()->sceneState.SceneCamera.SetOrthographicMode();
@@ -225,6 +228,15 @@ void AppGUI::RenderSceneTree(int regionWidth, float yOffset, CAD_APP* currentApp
 				{
 					sO->isVisible = true;
 				}
+				if (sO->isVisible && ImGui::MenuItem("Focus View"))
+				{
+					glm::vec3 camOffset = currentAppInstance->GetCurrentScene()->sceneState.SceneCamera.GetCameraState()->cameraPosition;
+					camOffset -= currentAppInstance->GetCurrentScene()->sceneState.SceneCamera.GetTarget();
+
+					currentAppInstance->GetCurrentScene()->sceneState.SceneCamera.SetTarget(sO->GetObjectPosition());
+					
+					currentAppInstance->GetCurrentScene()->sceneState.SceneCamera.GetCameraState()->cameraPosition = sO->GetObjectPosition() + camOffset;
+				}
 				if (ImGui::MenuItem("Delete", nullptr, nullptr, !sO->isDefaultObject))
 				{
 					currentAppInstance->messageManager.ReceiveMessage({"DELETE", sO->displayName});
@@ -275,6 +287,7 @@ void AppGUI::RenderSceneTree(int regionWidth, float yOffset, CAD_APP* currentApp
 	ImGui::End();
 }
 
+
 bool AppGUI::CheckValidName(CAD_SCENE* currentScene, char* testName)
 {
 	bool nameIsUnused = true;
@@ -309,17 +322,14 @@ void AppGUI::NewPointDialogue(CAD_SCENE* currentScene)
 	{
 		ImGui::Text("Create a new datum point.");
 		ImGui::Text("Enter the point in x, y, z coordinates.");
-		float* pos = MenuFlags::tempPoint;
+		float* pos = MenuFlags::tempPoint1;
 		if (ImGui::InputFloat3("Coordinates", pos))
 		{
-			MenuFlags::tempPoint[0] = pos[0];
-			MenuFlags::tempPoint[1] = pos[1];
-			MenuFlags::tempPoint[2] = pos[2];
+			MenuFlags::tempPoint1[0] = pos[0];
+			MenuFlags::tempPoint1[1] = pos[1];
+			MenuFlags::tempPoint1[2] = pos[2];
 		};
-		if (ImGui::InputText("Point Name", MenuFlags::defaultObjectName, 16 * sizeof(char), 0, 0, 0 ))
-		{
-
-		}
+		ImGui::InputText("Point Name", MenuFlags::defaultObjectName, 16 * sizeof(char), 0, 0, 0);
 		if (!AppGUI::CheckValidName(currentScene, MenuFlags::defaultObjectName))
 		{
 			ImGui::TextColored({ 1.0f, 0, 0, 1.0f }, "Name is already used!");
@@ -328,30 +338,13 @@ void AppGUI::NewPointDialogue(CAD_SCENE* currentScene)
 		{
 			if (AppGUI::CheckValidName(currentScene, MenuFlags::defaultObjectName))
 			{
-				Point* newPointObject = new Point(glm::vec3(MenuFlags::tempPoint[0], MenuFlags::tempPoint[1], MenuFlags::tempPoint[2]));
+				Point* newPointObject = new Point(glm::vec3(MenuFlags::tempPoint1[0], MenuFlags::tempPoint1[1], MenuFlags::tempPoint1[2]));
 				newPointObject->displayName = std::string(MenuFlags::defaultObjectName);
+				newPointObject->SetFlatColor({ 16, 16, 16 });
 				currentScene->AddSceneObject(newPointObject);
 				newPointObject = nullptr;
-				MenuFlags::tempPoint[0] = 0.0f;
-				MenuFlags::tempPoint[1] = 0.0f;
-				MenuFlags::tempPoint[2] = 0.0f;
-
-				MenuFlags::defaultObjectName[0] = 'D';
-				MenuFlags::defaultObjectName[1] = 'E';
-				MenuFlags::defaultObjectName[2] = 'F';
-				MenuFlags::defaultObjectName[3] = 'A';
-				MenuFlags::defaultObjectName[4] = 'U';
-				MenuFlags::defaultObjectName[5] = 'L';
-				MenuFlags::defaultObjectName[6] = 'T';
-				MenuFlags::defaultObjectName[7] = ' ';
-				MenuFlags::defaultObjectName[8] = 'N';
-				MenuFlags::defaultObjectName[9] = 'A';
-				MenuFlags::defaultObjectName[10] = 'M';
-				MenuFlags::defaultObjectName[11] = 'E';
-				MenuFlags::defaultObjectName[12] = '\0';
-				MenuFlags::defaultObjectName[13] = '\0';
-				MenuFlags::defaultObjectName[14] = '\0';
-				MenuFlags::defaultObjectName[15] = '\0';
+				
+				AppGUI::ResetDefaultValues();
 
 				currentScene->GetParentApplication()->GetMenuFlag()->newPointDialogue = false;
 			}
@@ -359,31 +352,146 @@ void AppGUI::NewPointDialogue(CAD_SCENE* currentScene)
 		ImGui::SameLine();
 		if (ImGui::Button("Cancel"))
 		{
-			MenuFlags::tempPoint[0] = 0.0f;
-			MenuFlags::tempPoint[1] = 0.0f;
-			MenuFlags::tempPoint[2] = 0.0f;
-
-			MenuFlags::defaultObjectName[0] = 'D';
-			MenuFlags::defaultObjectName[1] = 'E';
-			MenuFlags::defaultObjectName[2] = 'F';
-			MenuFlags::defaultObjectName[3] = 'A';
-			MenuFlags::defaultObjectName[4] = 'U';
-			MenuFlags::defaultObjectName[5] = 'L';
-			MenuFlags::defaultObjectName[6] = 'T';
-			MenuFlags::defaultObjectName[7] = ' ';
-			MenuFlags::defaultObjectName[8] = 'N';
-			MenuFlags::defaultObjectName[9] = 'A';
-			MenuFlags::defaultObjectName[10] = 'M';
-			MenuFlags::defaultObjectName[11] = 'E';
-			MenuFlags::defaultObjectName[12] = '\0';
-			MenuFlags::defaultObjectName[13] = '\0';
-			MenuFlags::defaultObjectName[14] = '\0';
-			MenuFlags::defaultObjectName[15] = '\0';
+			AppGUI::ResetDefaultValues();
 
 			currentScene->GetParentApplication()->GetMenuFlag()->newPointDialogue = false;
 		}
 		
-		
 		ImGui::EndPopup();
 	}
+}
+
+void AppGUI::NewAxisDialogue(CAD_SCENE* currentScene)
+{
+	ImGui::OpenPopup("New Axis Dialogue");
+	if (ImGui::BeginPopup("New Axis Dialogue"))
+	{
+		ImGui::Text("Create a new datum axis.");
+		ImGui::Text("Enter two points in x, y, z coordinates.");
+		float* pos1 = MenuFlags::tempPoint1;
+		float* pos2 = MenuFlags::tempPoint2;
+		if (ImGui::InputFloat3("Point 1", pos1))
+		{
+			MenuFlags::tempPoint1[0] = pos1[0];
+			MenuFlags::tempPoint1[1] = pos1[1];
+			MenuFlags::tempPoint1[2] = pos1[2];
+		};
+		if (ImGui::InputFloat3("Point 2", pos2))
+		{
+			MenuFlags::tempPoint2[0] = pos2[0];
+			MenuFlags::tempPoint2[1] = pos2[1];
+			MenuFlags::tempPoint2[2] = pos2[2];
+		};
+		ImGui::InputText("Axis Name", MenuFlags::defaultObjectName, 16 * sizeof(char), 0, 0, 0);
+		if (!AppGUI::CheckValidName(currentScene, MenuFlags::defaultObjectName))
+		{
+			ImGui::TextColored({ 1.0f, 0, 0, 1.0f }, "Name is already used!");
+		}
+		if (ImGui::Button("Confirm"))
+		{
+			if (AppGUI::CheckValidName(currentScene, MenuFlags::defaultObjectName))
+			{
+				Axis* newAxisObject = new Axis(glm::vec3{pos1[0], pos1[1], pos1[2]}, glm::vec3{ pos2[0], pos2[1], pos2[2] }, false);
+				newAxisObject->displayName = std::string(MenuFlags::defaultObjectName);
+				newAxisObject->SetFlatColor({ 196, 196, 196 });
+				currentScene->AddSceneObject(newAxisObject);
+				newAxisObject = nullptr;
+
+				AppGUI::ResetDefaultValues();
+
+				currentScene->GetParentApplication()->GetMenuFlag()->newAxisDialogue = false;
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel"))
+		{
+			AppGUI::ResetDefaultValues();
+
+			currentScene->GetParentApplication()->GetMenuFlag()->newAxisDialogue = false;
+		}
+
+		ImGui::EndPopup();
+	}
+}
+
+void AppGUI::NewPlaneDialogue(CAD_SCENE* currentScene)
+{
+	ImGui::OpenPopup("New Plane Dialogue");
+	if (ImGui::BeginPopup("New Plane Dialogue"))
+	{
+		ImGui::Text("Create a new datum plane.");
+		ImGui::Text("Enter a point in x, y, z coordinates.");
+		float* pos1 = MenuFlags::tempPoint1;
+		if (ImGui::InputFloat3("Point 1", pos1))
+		{
+			MenuFlags::tempPoint1[0] = pos1[0];
+			MenuFlags::tempPoint1[1] = pos1[1];
+			MenuFlags::tempPoint1[2] = pos1[2];
+		};
+		ImGui::Text("Enter a normal vector in x, y, z components.");
+		float* norm = MenuFlags::tempPoint2;
+		if (ImGui::InputFloat3("Normal Vector", norm))
+		{
+			MenuFlags::tempPoint2[0] = norm[0];
+			MenuFlags::tempPoint2[1] = norm[1];
+			MenuFlags::tempPoint2[2] = norm[2];
+		};
+		ImGui::InputText("Plane Name", MenuFlags::defaultObjectName, 16 * sizeof(char), 0, 0, 0);
+		if (!AppGUI::CheckValidName(currentScene, MenuFlags::defaultObjectName))
+		{
+			ImGui::TextColored({ 1.0f, 0, 0, 1.0f }, "Name is already used!");
+		}
+		if (ImGui::Button("Confirm"))
+		{
+			if (AppGUI::CheckValidName(currentScene, MenuFlags::defaultObjectName))
+			{
+				Plane* newPlaneObject = new Plane({norm[0], norm[1], norm[2]});
+				newPlaneObject->SetObjectPosition({ pos1[0], pos1[1], pos1[2] });
+				newPlaneObject->displayName = std::string(MenuFlags::defaultObjectName);
+				currentScene->AddSceneObject(newPlaneObject);
+				newPlaneObject = nullptr;
+
+				AppGUI::ResetDefaultValues();
+
+				currentScene->GetParentApplication()->GetMenuFlag()->newPlaneDialogue = false;
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel"))
+		{
+			AppGUI::ResetDefaultValues();
+
+			currentScene->GetParentApplication()->GetMenuFlag()->newPlaneDialogue = false;
+		}
+
+		ImGui::EndPopup();
+	}
+}
+
+void AppGUI::ResetDefaultValues()
+{
+	MenuFlags::tempPoint1[0] = 0.0f;
+	MenuFlags::tempPoint1[1] = 0.0f;
+	MenuFlags::tempPoint1[2] = 0.0f;
+
+	MenuFlags::tempPoint2[0] = 0.0f;
+	MenuFlags::tempPoint2[1] = 0.0f;
+	MenuFlags::tempPoint2[2] = 0.0f;
+
+	MenuFlags::defaultObjectName[0] = 'D';
+	MenuFlags::defaultObjectName[1] = 'E';
+	MenuFlags::defaultObjectName[2] = 'F';
+	MenuFlags::defaultObjectName[3] = 'A';
+	MenuFlags::defaultObjectName[4] = 'U';
+	MenuFlags::defaultObjectName[5] = 'L';
+	MenuFlags::defaultObjectName[6] = 'T';
+	MenuFlags::defaultObjectName[7] = ' ';
+	MenuFlags::defaultObjectName[8] = 'N';
+	MenuFlags::defaultObjectName[9] = 'A';
+	MenuFlags::defaultObjectName[10] = 'M';
+	MenuFlags::defaultObjectName[11] = 'E';
+	MenuFlags::defaultObjectName[12] = '\0';
+	MenuFlags::defaultObjectName[13] = '\0';
+	MenuFlags::defaultObjectName[14] = '\0';
+	MenuFlags::defaultObjectName[15] = '\0';
 }

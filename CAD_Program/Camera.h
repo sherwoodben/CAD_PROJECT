@@ -23,11 +23,11 @@ struct CameraState
 
 	bool cameraIsOrthographic = false;
 
-	glm::vec3 cameraTarget = {0.0f, 0.0f, 0.0f};
+	glm::vec3 cameraTarget = { 0.0f, 0.0f, 0.0f };
 	glm::vec3 cameraRight = { 1.0f, 0.0f, 0.0f };
 	glm::vec3 cameraUp = { 0.0f, 0.0f, 1.0f };
 
-	glm::vec3 cameraPosition = {0.0f, -5.0f, 0.0f};
+	glm::vec3 cameraPosition = { 0.0f, -5.0f, 0.0f };
 
 	float cameraFOV = 45.0f;
 	float cameraZoom = 1.0f;
@@ -53,7 +53,7 @@ public:
 	glm::mat4 GetProjectionMatrix(float window_aspect_ratio);
 
 	//return the view matrix
-	glm::mat4 GetViewMatrix() { return glm::lookAt(this->cameraState.cameraPosition, this->cameraState.cameraTarget, this->cameraState.cameraUp); };
+	glm::mat4 GetViewMatrix() { return glm::lookAt(this->GetCameraState()->cameraPosition, this->GetCameraState()->cameraTarget, this->GetCameraState()->cameraUp); };
 	glm::vec3 GetViewDirection() { return -glm::transpose(this->GetViewMatrix())[2]; };
 
 	//set the camera to a predefined view
@@ -81,7 +81,7 @@ public:
 	void TranslateCam(double deltaX, double deltaY);
 
 	//"exposes" the camera state
-	CameraState GetCameraState() { return this->cameraState; };
+	CameraState* GetCameraState() { return &this->cameraState; };
 
 private:
 	//we need to keep track of the camera state

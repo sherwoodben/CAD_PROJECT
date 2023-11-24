@@ -39,7 +39,7 @@ Axis::Axis(glm::vec3 axisVector, glm::vec3 axisPoint)
 {
     this->InitAxis();
     this->axisDirection = axisVector;
-    this->axisPoint = axisPoint;
+    this->SetObjectPosition(axisPoint);
 }
 
 Axis::Axis(glm::vec3 point1, glm::vec3 point2, bool reverse)
@@ -47,13 +47,13 @@ Axis::Axis(glm::vec3 point1, glm::vec3 point2, bool reverse)
     this->InitAxis();
     if (!reverse)
     {
-        this->axisDirection = glm::vec3(point2 - point1);
-        this->axisPoint = point2;
+        this->axisDirection = glm::normalize(glm::vec3(point2 - point1));
+        this->SetObjectPosition(point1);
     }
     else
     {
-        this->axisDirection = glm::vec3(point1 - point2);
-        this->axisPoint = point1;
+        this->axisDirection = glm::normalize(glm::vec3(point2 - point1));
+        this->SetObjectPosition(point2);
     }
 }
 
@@ -108,19 +108,20 @@ glm::mat4 Axis::GetModelMatrix()
     //and skinny (like a line)
     glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{ 1.0f, this->axisThickness, this->axisThickness });
 
-    //rotate into place
-    glm::vec3 axis = glm::normalize(glm::cross({ 1.0f, 0.0f, 0.0f }, this->axisDirection));
-    float angle = glm::acos(glm::dot({ 1.0f, 0.0f, 0.0f }, this->axisDirection));
-    glm::mat4 rotationMatrix = glm::rotate(modelMatrix, angle, axis);
+    glm::mat4 rotationMatrix = glm::mat4(1.0f);
+    //yaw
+    float yaw = glm::atan(this->axisDirection.y, this->axisDirection.x);
+    rotationMatrix = glm::rotate(rotationMatrix, yaw, { 0.0f, 0.0f, 1.0f });
+    //pitch
+    float pitch = -glm::atan(this->axisDirection.z, sqrt(this->axisDirection.x*this->axisDirection.x + this->axisDirection.y*this->axisDirection.y));
+    //std::cout << pitch << std::endl;
+    rotationMatrix = glm::rotate(rotationMatrix, pitch, {0.0f, 1.0f, 0.0f});
+    //roll
 
-    if ((this->axisDirection == glm::vec3{ 1.0f, 0.0f, 0.0f } || this->axisDirection == glm::vec3{ -1.0f, 0.0f, 0.0f }))
-    {
-        rotationMatrix = glm::mat4(1.0f);
-    }
 
-    //then, translate the matrix
-    glm::mat4 translateMatrix = glm::translate(modelMatrix, this->GetObjectPosition());
-
+    //translation
+    glm::mat4 translateMatrix = glm::mat4(1.0f);
+    translateMatrix = glm::translate(translateMatrix, this->GetObjectPosition());
     modelMatrix = translateMatrix * rotationMatrix * scaleMatrix;
 
 
@@ -143,6 +144,6 @@ void Axis::InitAxis()
     this->SetShaderType(ShaderType::AXIS);
 
     //set up all the buffers; axes are defined with 8
-    //vertices and 12 indices (four triangles * three points each)
+    //vertices and 36 indices (12 triangles * three points each)
     this->SetUpBuffers(Axis::axisVertices, NUM_AXIS_VERTICES, Axis::axisIndices, NUM_AXIS_INDICES);
 }

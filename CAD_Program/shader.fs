@@ -49,28 +49,39 @@ void main()
 vec4 DoPlaneGrid(in vec2 gridCoords)
 {
 	float semiMajorDivisions = 5;
-	float gridLineWidth = 0.025;
-	float minorDivisions = 4.0;
+	float minorDivisions = 10.0;
+	float gridLineWidth = 0.1 / minorDivisions;
+	
 
 	vec2 cellCoord = fract(gridCoords * semiMajorDivisions * 2.);
 	vec2 minorCellCoord = fract(cellCoord * minorDivisions);
 	//first, see if we are within 'x' distance of a
 	//major division
-	bool xMajorGrid = (cellCoord.x <= gridLineWidth / 2.) || ((1.0 - cellCoord.x) <= gridLineWidth / 2.);
-	bool yMajorGrid = (cellCoord.y <= gridLineWidth / 2.) || ((1.0 - cellCoord.y) <= gridLineWidth / 2.);
+	bool xMajorGrid = (cellCoord.x <= gridLineWidth) || ((1.0 - cellCoord.x) <= gridLineWidth);
+	bool yMajorGrid = (cellCoord.y <= gridLineWidth) || ((1.0 - cellCoord.y) <= gridLineWidth);
 	//or a minor division
-	bool xMinorGrid = (minorCellCoord.x <= gridLineWidth) || ((1.0 - minorCellCoord.x) <= gridLineWidth);
-	bool yMinorGrid = (minorCellCoord.y <= gridLineWidth) || ((1.0 - minorCellCoord.y) <= gridLineWidth);
+	bool xMinorGrid = (minorCellCoord.x <= gridLineWidth * minorDivisions) || ((1.0 - minorCellCoord.x) <= gridLineWidth * minorDivisions);
+	bool yMinorGrid = (minorCellCoord.y <= gridLineWidth * minorDivisions) || ((1.0 - minorCellCoord.y) <= gridLineWidth * minorDivisions);
 	//set the color accordingly
 	vec4 result = vec4(0.0f);
-	if ((xMajorGrid || yMajorGrid))
+	if (abs(gridCoords.y - 0.5) <= gridLineWidth / 4. && gridCoords.x > 0.5 && gridCoords.x < 0.6)
 	{
-		result = vec4(flatColor.rgb * 0.75, 1.0);
+		result = vec4(1.0, 0., 0., 1.0);
+	}
+	else if (abs(gridCoords.x - 0.5) <= gridLineWidth / 4. && gridCoords.y > 0.5 && gridCoords.y < 0.6)
+	{
+		result = vec4(0., 1., 0., 1.0);
+	}
+	else if ((xMajorGrid || yMajorGrid))
+	{
+		result = vec4(flatColor.rgb * 0.75, 0.5);
 	}
 	else if ((xMinorGrid || yMinorGrid))
 	{
-		result = vec4(flatColor.rgb * 0.75, 0.9);
+		result = vec4(flatColor.rgb * 0.75, 0.25);
 	}
+	
+
 	else result = vec4(0.0);
 
 	return (result);

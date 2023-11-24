@@ -309,8 +309,6 @@ void CAD_APP::Update()
 	}
 
 	this->currentScene->UpdateScene();
-
-	std::cout << this->appMenuFlags.newPointDialogue << std::endl;
 }
 
 void CAD_APP::Render()
@@ -338,6 +336,14 @@ void CAD_APP::RenderGUI()
 	if (this->appMenuFlags.newPointDialogue)
 	{
 		AppGUI::NewPointDialogue(this->currentScene);
+	}
+	if (this->appMenuFlags.newAxisDialogue)
+	{
+		AppGUI::NewAxisDialogue(this->currentScene);
+	}
+	if (this->appMenuFlags.newPlaneDialogue)
+	{
+		AppGUI::NewPlaneDialogue(this->currentScene);
 	}
 	//render Dear ImGUI GUI
 	//begin a test window -- will eventually become

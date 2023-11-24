@@ -73,7 +73,7 @@ public:
 	void DoArcBallCam();
 	void DoTranslateCam();
 	void SetCameraView(CameraState::DefinedView desiredView);
-	void SaveCameraView() { this->sceneState.SavedView = this->sceneState.SceneCamera.GetCameraState(); };
+	void SaveCameraView() { this->sceneState.SavedView = *this->sceneState.SceneCamera.GetCameraState(); };
 
 	bool HasChanges() { return !this->sceneState.SceneUpToDate; }
 

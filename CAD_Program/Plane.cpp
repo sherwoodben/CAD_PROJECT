@@ -16,9 +16,18 @@ unsigned int Plane::planeIndices[] =
 	3, 0, 2		//second triangle
 };
 
-Plane::Plane(glm::vec3 planeNormal) : normalVector(glm::normalize(planeNormal))
+Plane::Plane(glm::vec3 planeNormal, glm::vec3 planeTangent) : normalVector(glm::normalize(planeNormal))
 {
 	this->InitPlane();
+
+	if (planeTangent != glm::vec3(0.0f, 0.0f, 0.0f))
+	{
+		this->tangentVector = glm::normalize(planeTangent);
+	}
+	else
+	{
+		this->tangentVector = -glm::normalize(glm::cross(this->normalVector, { 0.0f, 0.0f, 1.0f }));
+	}
 }
 
 Plane::Plane(const char* basisDirection)
@@ -29,6 +38,7 @@ Plane::Plane(const char* basisDirection)
 	if (basisDirection == "z" || basisDirection == "Z")
 	{
 		this->normalVector = { 0.0f, 0.0f, 1.0f };
+		this->tangentVector = { 1.0f, 0.0f, 0.0f };
 		this->displayName = "X - Y Plane";
 		this->isDefaultObject = true;
 		this->SetDebugColor({ 255, 0, 0 });
@@ -36,7 +46,8 @@ Plane::Plane(const char* basisDirection)
 	//XZ Plane
 	else if (basisDirection == "y" || basisDirection == "Y")
 	{
-		this->normalVector = { 0.0f, -1.0f, 0.0f };
+		this->normalVector = { 0.0f, 1.0f, 0.0f };
+		this->tangentVector = { -1.0f, 0.0f, 0.0f };
 		this->displayName = "X - Z Plane";
 		this->isDefaultObject = true;
 		this->SetDebugColor({ 0, 0, 255 });
@@ -45,6 +56,7 @@ Plane::Plane(const char* basisDirection)
 	else if (basisDirection == "x" || basisDirection == "X")
 	{
 		this->normalVector = { 1.0f, 0.0f, 0.0f };
+		this->tangentVector = { 0.0f, 1.0f, 0.0f };
 		this->displayName = "Y - Z Plane";
 		this->isDefaultObject = true;
 		this->SetDebugColor({ 0, 255, 0 });
@@ -53,9 +65,12 @@ Plane::Plane(const char* basisDirection)
 	{
 		this->displayName = "INVALID PLANE";
 		this->normalVector = { 0.0f, 0.0f, 0.0f };
+		this->tangentVector = { 0.0f, 0.0f, 0.0f };
 		this->isDefaultObject = true;
 		this->SetDebugColor({ 255, 0, 255 });
 	}
+
+	
 }
 
 void Plane::RenderObject()
@@ -69,20 +84,22 @@ glm::mat4 Plane::GetModelMatrix()
 {
 	glm::mat4 modelMatrix = glm::mat4(1.0f);
 
-	//first, scale the matrix
+	////first, scale the matrix
 	glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{this->GetObjectScale()});
 
-	glm::vec3 axis = glm::normalize(glm::cross({ 0.0f, 0.0f, 1.0f }, this->normalVector));
-	float angle = glm::acos(glm::dot({ 0.0f, 0.0f, 1.0f }, this->normalVector));
-	glm::mat4 rotationMatrix = glm::rotate(modelMatrix, angle, axis);
-	
+	glm::vec3 surfNormal = glm::normalize(this->normalVector);
+	glm::vec3 surfTangent = glm::normalize(this->tangentVector);
+	glm::vec3 surfBiTangent = glm::normalize(glm::cross(surfNormal, surfTangent));
 
-	if ((this->normalVector == glm::vec3{ 0.0f, 0.0f, 1.0f } || this->normalVector == glm::vec3{ 0.0f, 0.0f, -1.0f }))
-	{
-		rotationMatrix = glm::mat4(1.0f);
-	}
+	//rotation is "just" a change of basis since
+	//everything is normalized
+	glm::mat4 rotationMatrix = glm::mat4(1.0f);
+	rotationMatrix[0] = { surfTangent, 0.0f };
+	rotationMatrix[1] = { surfBiTangent, 0.0f };
+	rotationMatrix[2] = { surfNormal, 0.0f };
+	rotationMatrix[3] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-	//then, translate the matrix
+	////then, translate the matrix
 	glm::mat4 translateMatrix = glm::translate(modelMatrix, this->GetObjectPosition());
 
 	modelMatrix = translateMatrix * rotationMatrix * scaleMatrix;
@@ -99,6 +116,8 @@ void Plane::InitPlane()
 {
 	//first of all, this is a datum object
 	this->isDatumObject = true;
+
+	this->tangentVector = glm::cross(this->normalVector, { 0.0f, 0.0f, 1.0f });
 
 	//update the object type
 	this->objectType = "Plane";

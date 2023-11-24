@@ -16,8 +16,12 @@ struct MenuFlags
 	bool preferencesMenu = false;
 
 	bool newPointDialogue = false;
+	bool newAxisDialogue = false;
+	bool newPlaneDialogue = false;
 
-	static float tempPoint[];
+	static float tempPoint1[];
+	static float tempPoint2[];
+	static float tempPoint3[];
 	static char defaultObjectName[];
 	
 };
@@ -33,5 +37,11 @@ namespace AppGUI {
 
 	void NewPointDialogue(CAD_SCENE* currentScene);
 
+	void NewAxisDialogue(CAD_SCENE* currentScene);
+
+	void NewPlaneDialogue(CAD_SCENE* currentScene);
+
 	bool CheckValidName(CAD_SCENE* currentScene, char* testName);
+
+	void ResetDefaultValues();
 }

@@ -210,8 +210,7 @@ void CAD_SCENE::HandleNewObjectMessage(std::string typeToAdd)
 {
 	if (typeToAdd == "POINT")
 	{
-		std::cout << "Add POINT Implementation working on..." << std::endl;
-		this->parentApplication->GetMenuFlag()->newPointDialogue = true;
+		std::cout << "Adding Point." << std::endl;
 		return;
 	}
 	if (typeToAdd == "AXIS")
