@@ -90,6 +90,15 @@
     <ClCompile Include="Axis.cpp">
       <Filter>Source Files\Objects\Scene Objects</Filter>
     </ClCompile>
+    <ClCompile Include="AppGUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Point.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Sketch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\imgui\imconfig.h">
@@ -145,6 +154,15 @@
     </ClInclude>
     <ClInclude Include="Axis.h">
       <Filter>Header Files\Objects\Scene Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="AppGUI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Point.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Sketch.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

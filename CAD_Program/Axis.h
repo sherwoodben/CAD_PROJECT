@@ -29,9 +29,6 @@ private:
 	//axis direction vector:
 	glm::vec3 axisDirection;
 
-	//axis offset
-	glm::vec3 axisPoint = { 0.0f, 0.0f, 0.0f };
-
 	//vertices that define the axis for rendering
 	static float axisVertices[];
 	//and the indices

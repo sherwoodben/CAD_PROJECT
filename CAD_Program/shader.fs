@@ -10,10 +10,7 @@ in vec2 gridCoordinates;
 vec4 DoPlaneGrid(in vec2 gridCoords);
 //FLAT = 2
 uniform vec4 flatColor;
-
-
 out vec4 FragColor;
-
 void main()
 {
 	vec4 resultingColor = vec4(0.0);
@@ -28,11 +25,22 @@ void main()
 	{
 		resultingColor = DoPlaneGrid(gridCoordinates);
 	}
+	//SKETCH
 	else if (shaderType == 2)
 	{
 		resultingColor = flatColor;
 	}
+	//AXIS
 	else if (shaderType == 3)
+	{
+		resultingColor = flatColor;
+	}
+	//POINT
+	else if (shaderType == 4)
+	{
+		resultingColor = flatColor;
+	}
+	else
 	{
 		resultingColor = flatColor;
 	}
@@ -67,4 +75,4 @@ vec4 DoPlaneGrid(in vec2 gridCoords)
 	else result = vec4(0.0);
 
 	return (result);
-}
+};

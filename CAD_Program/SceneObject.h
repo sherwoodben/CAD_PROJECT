@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 struct Color
 {
@@ -22,9 +23,13 @@ enum ShaderType
 {
 	DEBUG,
 	PLANE_GRID,
+	SKETCH,
 	AXIS,
+	POINT,
 	FLAT,
 };
+
+class Shader;
 
 class SceneObject
 {
@@ -41,15 +46,22 @@ public:
 	//keeps track of if an object is a default
 	//object (false by default)
 	bool isDefaultObject = false;
+	
+	//keeps track of if an object is a datum object
+	bool isDatumObject = false;
 
 	//keeps track of if an object is visible
 	//(true by default)
 	bool isVisible = true;
 
+	//keep track of if the object is selected
+	bool isSelected = false;
+
 	//virtual function for rendering a scene
 	//object; each type of object will implement
 	//a different method of rendering
-	virtual void RenderObject() {};
+	void PassShaderData(Shader* shader);
+	virtual void RenderObject() = 0;
 	void RenderAsTriangles(unsigned int numIndices);
 
 	//virtual function that deletes an object (if

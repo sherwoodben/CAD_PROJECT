@@ -2,6 +2,10 @@
 
 #include "Camera.h"
 
+#define MIN_WIDTH 640
+#define MIN_HEIGHT 480
+#define SCENE_TREE_WIDTH 200
+
 MessageManager CAD_APP::messageManager = MessageManager();
 
 void CAD_APP::RegisterCallbacks()
@@ -69,6 +73,17 @@ void CAD_APP::ShutdownApp()
 //define callbacks:
 void CAD_APP::windowResizeCallback(GLFWwindow* resizedWindow, int newWidth, int newHeight)
 {
+	if (newWidth < MIN_WIDTH)
+	{
+		newWidth = MIN_WIDTH;
+		
+	}
+	if (newHeight < MIN_HEIGHT)
+	{
+		newHeight = MIN_HEIGHT;
+	}
+
+	glfwSetWindowSize(resizedWindow, newWidth, newHeight);
 	glViewport(0, 0, newWidth, newHeight);
 	messageManager.ReceiveMessage({ "WINDOW", "RESIZE" });
 }
@@ -313,70 +328,30 @@ void CAD_APP::Render()
 
 void CAD_APP::RenderGUI()
 {
+	float yOffset;
+	AppGUI::RenderMenuBar(yOffset, this);
+
+	AppGUI::RenderSceneTree(SCENE_TREE_WIDTH, yOffset, this);
+
+	if (this->appMenuFlags.newPointDialogue)
+	{
+		AppGUI::NewPointDialogue(this->currentScene);
+	}
+	if (this->appMenuFlags.newAxisDialogue)
+	{
+		AppGUI::NewAxisDialogue(this->currentScene);
+	}
+	if (this->appMenuFlags.newPlaneDialogue)
+	{
+		AppGUI::NewPlaneDialogue(this->currentScene);
+	}
+	if (this->appMenuFlags.newSketchDialogue)
+	{
+		AppGUI::NewSketchDialogue(this->currentScene);
+	}
 	//render Dear ImGUI GUI
 	//begin a test window -- will eventually become
 	//the "scene tree" --bit of a misnomer for now
-	ImGui::Begin("Scene Tree:");
-
-	//first, display the camera options
-	if (this->currentScene->sceneState.SceneCamera.GetCameraState().cameraIsOrthographic == true)
-	{
-		if (ImGui::Button("Toggle Perspective"))
-		{
-			this->currentScene->sceneState.SceneCamera.SetPerspectiveMode();
-		}
-	}
-	else if (this->currentScene->sceneState.SceneCamera.GetCameraState().cameraIsOrthographic == false)
-	{
-		if (ImGui::Button("Toggle Orthographic"))
-		{
-			this->currentScene->sceneState.SceneCamera.SetOrthographicMode();
-		}
-	}
-	if (ImGui::Button("Reset Camera"))
-	{
-		this->currentScene->SetCameraView(CameraState::DefinedView::RESET);
-	}
-	if (ImGui::Button("Save Camera View"))
-	{
-		this->currentScene->SaveCameraView();
-	}
-	if (ImGui::Button("Load Camera View"))
-	{
-		this->currentScene->SetCameraView(CameraState::DefinedView::SAVED);
-	}
-
-	//then list the objects
-	for (SceneObject* sO : this->currentScene->GetSceneObjects() )
-	{
-		//if this is a default object, display in a different color:
-		if (sO->isDefaultObject)
-		{
-			ImGui::TextColored({ 0, 200, 200, 200 }, sO->displayName.c_str());
-		}
-		
-		else {
-			ImGui::Text(sO->displayName.c_str());
-		}
-		ImGui::SameLine();
-		//now, display what type of object it is (implement this later)
-		ImGui::TextColored({ 128, 0, 128, 255 }, ("["+sO->objectType+"]").c_str());
-		ImGui::SameLine();
-		ImGui::PushID(*sO->GetObjectVBOPointer());
-		//check if the object is visible so we know if we should say "Hide" or "Show"
-		bool isVisible = sO->isVisible;
-		std::string hideShowText;
-		if (isVisible) hideShowText = "Hide";
-		else hideShowText = "Show";
-		if (ImGui::Button(hideShowText.c_str()))
-		{
-			sO->isVisible = !(sO->isVisible);
-		}	
-		
-		ImGui::PopID();
-	}
-
-	ImGui::End();
 
 	//actually render DearImGUI
 	ImGui::Render();
@@ -403,7 +378,7 @@ bool CAD_APP::LoadSceneFromFile(std::string scenePath)
 
 CAD_SCENE* CAD_APP::LoadEmptyScene()
 {
-	CAD_SCENE* emptyScene = new CAD_SCENE();
+	CAD_SCENE* emptyScene = new CAD_SCENE(this);
 	emptyScene->SetShader(this->applicationShader);
 
 	return emptyScene;

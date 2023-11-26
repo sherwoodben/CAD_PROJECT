@@ -75,7 +75,7 @@ void Camera::GoToDefinedView(CameraState::DefinedView desiredView, CameraState s
 	case CameraState::DefinedView::ISOMETRIC:
 		desiredCameraState.cameraPosition = { 1.0f, 1.0f, 1.0f };
 		desiredCameraState.cameraRight = { -1.0f, 1.0f, 0.0f };
-		desiredCameraState.cameraUp = { -1.0f, -1.0f, 1.0f };
+		//desiredCameraState.cameraUp = { -1.0f, -1.0f, 1.0f };
 		break;
 	case CameraState::DefinedView::BACK:
 		desiredCameraState.cameraPosition = { 0.0f, 1.0f, 0.0f };
@@ -176,8 +176,8 @@ void Camera::UpdateCamera()
 
 void Camera::ArcBall(double angleX, double angleY)
 {
-	glm::vec4 camPositionHomogeneous = glm::vec4(this->cameraState.cameraPosition, 1.0f);
-	glm::vec4 camSightHomogeneous = glm::vec4(-this->cameraState.cameraPosition, 1.0f);
+	glm::vec4 camOffsetFromTarget = glm::vec4(this->cameraState.cameraPosition - this->cameraState.cameraTarget, 1.0f);
+	//glm::vec4 camSightHomogeneous = glm::vec4(-this->cameraState.cameraPosition, 1.0f);
 	
 	glm::vec4 pivotPositionHomogeneous = glm::vec4(this->cameraState.cameraTarget, 1.0f);
 
@@ -186,21 +186,22 @@ void Camera::ArcBall(double angleX, double angleY)
 
 	glm::mat4x4 rotationMatrix(1.0f);
 
-	glm::vec3 crossProd = glm::cross(glm::vec3(camPositionHomogeneous.x, camPositionHomogeneous.y, 0.0f), this->cameraState.cameraRight);
+	glm::vec3 crossProd = glm::cross(glm::vec3(camOffsetFromTarget.x, camOffsetFromTarget.y, 0.0f), this->cameraState.cameraRight);
 	if (crossProd == glm::vec3(0.0f))
 	{
 		crossProd = glm::vec3(0.0f, 0.0f, 1.0f);
 	}
 
 	rotationMatrix = glm::rotate(rotationMatrix, (float)(angleX), -crossProd);
+	this->cameraState.cameraRight = rotationMatrix * glm::vec4(this->cameraState.cameraRight, 1.0f);
 	rotationMatrix = glm::rotate(rotationMatrix, (float)angleY, -glm::vec3(newRightHomogeneous));
 	
-	camPositionHomogeneous = rotationMatrix * (camPositionHomogeneous - pivotPositionHomogeneous) + pivotPositionHomogeneous;
+	camOffsetFromTarget = rotationMatrix * (camOffsetFromTarget) + pivotPositionHomogeneous;
 
-	glm::vec3 finalCameraHomogeneous = glm::vec3(camPositionHomogeneous.x * this->cameraState.cameraZoom, camPositionHomogeneous.y * this->cameraState.cameraZoom, camPositionHomogeneous.z * this->cameraState.cameraZoom);
+	glm::vec3 finalCameraHomogeneous = glm::vec3(camOffsetFromTarget.x * this->cameraState.cameraZoom, camOffsetFromTarget.y * this->cameraState.cameraZoom, camOffsetFromTarget.z * this->cameraState.cameraZoom);
 
-	this->cameraState.cameraPosition = camPositionHomogeneous;
+	this->cameraState.cameraPosition = camOffsetFromTarget;
 
 	//update the camera right vector:
-	this->cameraState.cameraRight = rotationMatrix * glm::vec4(this->cameraState.cameraRight, 1.0f);
+	
 }

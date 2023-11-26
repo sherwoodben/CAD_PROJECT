@@ -1,14 +1,10 @@
 #include "CAD_SCENE.h"
+#include "AppGUI.h"
+#include "CAD_APP.h"
 
-CAD_SCENE::CAD_SCENE()
-{
-	this->LoadDefaultObjects();
-}
-
-CAD_SCENE::CAD_SCENE(std::string loadPath)
-{
-	this->LoadDefaultObjects();
-}
+#define SCREEN_CLEAR_R 0.5f
+#define SCREEN_CLEAR_G 0.5f
+#define SCREEN_CLEAR_B 0.8f
 
 CAD_SCENE::~CAD_SCENE()
 {
@@ -22,11 +18,20 @@ CAD_SCENE::~CAD_SCENE()
 
 void CAD_SCENE::LoadDefaultObjects()
 {
-	//SET UP PLANES
-	this->LoadDefaultPlanes();
+	//ADD ORIGIN
+	Point* origin = new Point({ 0.0f, 0.0f, 0.0f });
+	origin->displayName = "Origin";
+	origin->isDefaultObject = true;
+	origin->SetDebugColor({ 255, 255, 255 });
+	origin->SetFlatColor({ 255, 255, 255 });
+	this->AddSceneObject(origin);
+	origin = nullptr;
 
 	//SET UP AXES
 	this->LoadDefaultAxes();
+
+	//SET UP PLANES
+	this->LoadDefaultPlanes();
 }
 
 void CAD_SCENE::LoadDefaultPlanes()
@@ -67,7 +72,15 @@ void CAD_SCENE::LoadDefaultAxes()
 
 void CAD_SCENE::AddSceneObject(SceneObject* objectToAdd)
 {
-	this->sceneObjects.push_back(objectToAdd);
+	if (!objectToAdd->isDatumObject)
+	{
+		this->sceneObjects.push_back(objectToAdd);
+	}
+	else
+	{
+		this->datumObjects.push_back(objectToAdd);
+	}
+	
 }
 
 void CAD_SCENE::DoArcBallCam()
@@ -110,8 +123,18 @@ void CAD_SCENE::CloseScene()
 
 void CAD_SCENE::ProcessMessage(Message msg)
 {
-	std::cout << msg.messageType << std::endl;
+	std::cout << msg.messageType << " " << msg.messageData << std::endl;
 	
+	if (msg.messageType == "DELETE")
+	{
+		this->HandleDeleteObjectMessage(msg.messageData);
+		return;
+	}
+	if (msg.messageType == "NEW_OBJECT")
+	{
+		this->HandleNewObjectMessage(msg.messageData);
+		return;
+	}
 
 	//Middle mouse toggles the arc ball for manipulating the view
 	if (msg.messageType == "M_MOUSE")
@@ -125,8 +148,6 @@ void CAD_SCENE::ProcessMessage(Message msg)
 	//mouse when scroll zooms in and out
 	if (msg.messageType == "M_SCROLL")
 	{
-		std::cout << std::log(2 + std::stof(msg.messageData)) << std::endl;
-
 		float zoomDelta = std::stof(msg.messageData);
 
 		if (&this->sceneState.SceneCamera != nullptr)
@@ -185,6 +206,46 @@ void CAD_SCENE::ProcessMessage(Message msg)
 	
 }
 
+void CAD_SCENE::HandleDeleteObjectMessage(std::string objToDelete)
+{
+}
+
+void CAD_SCENE::HandleNewObjectMessage(std::string typeToAdd)
+{
+	if (typeToAdd == "POINT")
+	{
+		std::cout << "Adding Point." << std::endl;
+		return;
+	}
+	if (typeToAdd == "AXIS")
+	{
+		std::cout << "Add AXIS Implementation Missing." << std::endl;
+		return;
+	}
+	if (typeToAdd == "PLANE")
+	{
+		std::cout << "Add PLANE Implementation Missing." << std::endl;
+		return;
+	}
+	if (typeToAdd == "SKETCH")
+	{
+		std::cout << "Add SKETCH Implementation Missing." << std::endl;
+		return;
+	}
+	if (typeToAdd == "SURFACE")
+	{
+		std::cout << "Add SURFACE Implementation Missing." << std::endl;
+		return;
+	}
+	if (typeToAdd == "SOLID")
+	{
+		std::cout << "Add SOLID Implementation Missing." << std::endl;
+		return;
+	}
+
+	std::cout << "UNKNOWN TYPE REQUESTED FOR NEW OBJECT" << std::endl;
+}
+
 void CAD_SCENE::UpdateMousePosition()
 {
 	glfwGetCursorPos(glfwGetCurrentContext(), &this->sceneState.MousePos[0], &this->sceneState.MousePos[1]);
@@ -238,6 +299,7 @@ void CAD_SCENE::UpdateScene()
 
 void CAD_SCENE::RenderScene()
 {
+	//glViewport(0, 0, sceneState.ScreenDimensions[0], sceneState.ScreenDimensions[1]);
 	//enable openGL depth test
 	glEnable(GL_DEPTH_TEST);
 
@@ -248,10 +310,9 @@ void CAD_SCENE::RenderScene()
 	// draw in wireframe
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	//set the clear color
-	glClearColor(0.15f, 0.15f, 0.25f, 1.0f);
+	glClearColor(SCREEN_CLEAR_R, SCREEN_CLEAR_G, SCREEN_CLEAR_B, 1.0f);
 	//clear the window
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	//get the active camera, and get the "projection
 	//matrix" and "view matrix" from that camera:
 	
@@ -266,64 +327,35 @@ void CAD_SCENE::RenderScene()
 
 	std::vector<SceneObject*> objectsWithTransparency;
 
-	//now, loop through the SceneObjects
+	std::vector<SceneObject*>* objectVectors[2] = {&this->sceneObjects, &this->datumObjects};
+
+	//now, loop through the SceneObjects (and Datum Objects)
 	//and render them
-	for (SceneObject* sO : this->GetSceneObjects())
+	for (int i = 0; i < 1 + this->sceneState.ShowDatumObjects; i++)
 	{
-		//only do this if the object is visible:
-		if (!sO->isVisible)
+		for (SceneObject* sO : *objectVectors[i])
 		{
-			continue;
+			//only do this if the object is visible:
+			if (!sO->isVisible)
+			{
+				continue;
+			}
+			//if the object has transparency, add that to the list so we can do them second:
+			if (sO->GetIsTransparent())
+			{
+				objectsWithTransparency.push_back(sO);
+				continue;
+			}
+
+			sO->PassShaderData(this->sceneShader);
+
+			sO->RenderObject();
+
+			//std::cout << glGetError() << std::endl;
+
 		}
-		//if the object has transparency, add that to the list so we can do them second:
-		if (sO->GetIsTransparent())
-		{
-			objectsWithTransparency.push_back(sO);
-			continue;
-		}
-		//update the -per model- uniforms (i.e.
-		//model matrices, colors, etc.)
-		//first get the model matrix:
-		glm::mat4 modelMatrix = sO->GetModelMatrix();
-		//then update the shader
-		this->GetShader()->setMat4("model", modelMatrix);
-
-		//get the R G B and A components of the debug color
-		//of the model
-		float r = (float)sO->GetDebugColor().r;
-		float g = (float)sO->GetDebugColor().g;
-		float b = (float)sO->GetDebugColor().b;
-		float a = (float)sO->GetDebugColor().a;
-		//scale them to be between 0 and 1 (divide by 255)
-		r /= 255.0f;
-		g /= 255.0f;
-		b /= 255.0f;
-		a /= 255.0f;
-		//now, make  the color a vec4
-		glm::vec4 debugColor = glm::vec4(r, g, b, a);
-		//next, do the debug color to test things
-		this->GetShader()->setVec4("debugColor", debugColor);
-
-		//do the same for the flat color (wow, this is a pain! maybe I should fix that.)
-		r = (float)sO->GetFlatColor().r;
-		g = (float)sO->GetFlatColor().g;
-		b = (float)sO->GetFlatColor().b;
-		a = (float)sO->GetFlatColor().a;
-		//scale them to be between 0 and 1 (divide by 255)
-		r /= 255.0f;
-		g /= 255.0f;
-		b /= 255.0f;
-		a /= 255.0f;
-		//now, make  the color a vec4
-		glm::vec4 flatColor = glm::vec4(r, g, b, a);
-		//update the flat color uniform
-		this->GetShader()->setVec4("flatColor", flatColor);
-
-		//next, update the shader based on the object type:
-		this->GetShader()->setInt("shaderType", sO->GetShaderType());
-		//then render the object
-		sO->RenderObject();
 	}
+	
 
 	//start of transparencies; turn off depth mask
 	glDepthMask(false);
@@ -338,48 +370,11 @@ void CAD_SCENE::RenderScene()
 			continue;
 		}
 
-		//update the -per model- uniforms (i.e.
-		//model matrices, colors, etc.)
-		//first get the model matrix:
-		glm::mat4 modelMatrix = sO->GetModelMatrix();
-		//then update the shader
-		this->GetShader()->setMat4("model", modelMatrix);
+		sO->PassShaderData(this->sceneShader);
 
-		//get the R G B and A components of the debug color
-		//of the model
-		float r = (float)sO->GetDebugColor().r;
-		float g = (float)sO->GetDebugColor().g;
-		float b = (float)sO->GetDebugColor().b;
-		float a = (float)sO->GetDebugColor().a;
-		//scale them to be between 0 and 1 (divide by 255)
-		r /= 255.0f;
-		g /= 255.0f;
-		b /= 255.0f;
-		a /= 255.0f;
-		//now, make  the color a vec4
-		glm::vec4 debugColor = glm::vec4(r, g, b, a);
-		//next, do the debug color to test things
-		this->GetShader()->setVec4("debugColor", debugColor);
-
-		//do the same for the flat color (wow, this is a pain! maybe I should fix that.)
-		r = (float)sO->GetFlatColor().r;
-		g = (float)sO->GetFlatColor().g;
-		b = (float)sO->GetFlatColor().b;
-		a = (float)sO->GetFlatColor().a;
-		//scale them to be between 0 and 1 (divide by 255)
-		r /= 255.0f;
-		g /= 255.0f;
-		b /= 255.0f;
-		a /= 255.0f;
-		//now, make  the color a vec4
-		glm::vec4 flatColor = glm::vec4(r, g, b, a);
-		//update the flat color uniform
-		this->GetShader()->setVec4("flatColor", flatColor);
-
-		//next, update the shader based on the object type:
-		this->GetShader()->setInt("shaderType", sO->GetShaderType());
-		//then render the object
 		sO->RenderObject();
+
+		//std::cout << glGetError() << std::endl;
 	}
 
 	//done with transparencies; turn on depth mask again
