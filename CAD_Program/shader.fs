@@ -10,10 +10,7 @@ in vec2 gridCoordinates;
 vec4 DoPlaneGrid(in vec2 gridCoords);
 //FLAT = 2
 uniform vec4 flatColor;
-
-
 out vec4 FragColor;
-
 void main()
 {
 	vec4 resultingColor = vec4(0.0);
@@ -28,18 +25,22 @@ void main()
 	{
 		resultingColor = DoPlaneGrid(gridCoordinates);
 	}
-	//AXIS
+	//SKETCH
 	else if (shaderType == 2)
 	{
 		resultingColor = flatColor;
 	}
-	//POINT
+	//AXIS
 	else if (shaderType == 3)
 	{
 		resultingColor = flatColor;
 	}
-	//FLAT
+	//POINT
 	else if (shaderType == 4)
+	{
+		resultingColor = flatColor;
+	}
+	else
 	{
 		resultingColor = flatColor;
 	}
@@ -49,40 +50,29 @@ void main()
 vec4 DoPlaneGrid(in vec2 gridCoords)
 {
 	float semiMajorDivisions = 5;
-	float minorDivisions = 10.0;
-	float gridLineWidth = 0.1 / minorDivisions;
-	
+	float gridLineWidth = 0.025;
+	float minorDivisions = 4.0;
 
 	vec2 cellCoord = fract(gridCoords * semiMajorDivisions * 2.);
 	vec2 minorCellCoord = fract(cellCoord * minorDivisions);
 	//first, see if we are within 'x' distance of a
 	//major division
-	bool xMajorGrid = (cellCoord.x <= gridLineWidth) || ((1.0 - cellCoord.x) <= gridLineWidth);
-	bool yMajorGrid = (cellCoord.y <= gridLineWidth) || ((1.0 - cellCoord.y) <= gridLineWidth);
+	bool xMajorGrid = (cellCoord.x <= gridLineWidth / 2.) || ((1.0 - cellCoord.x) <= gridLineWidth / 2.);
+	bool yMajorGrid = (cellCoord.y <= gridLineWidth / 2.) || ((1.0 - cellCoord.y) <= gridLineWidth / 2.);
 	//or a minor division
-	bool xMinorGrid = (minorCellCoord.x <= gridLineWidth * minorDivisions) || ((1.0 - minorCellCoord.x) <= gridLineWidth * minorDivisions);
-	bool yMinorGrid = (minorCellCoord.y <= gridLineWidth * minorDivisions) || ((1.0 - minorCellCoord.y) <= gridLineWidth * minorDivisions);
+	bool xMinorGrid = (minorCellCoord.x <= gridLineWidth) || ((1.0 - minorCellCoord.x) <= gridLineWidth);
+	bool yMinorGrid = (minorCellCoord.y <= gridLineWidth) || ((1.0 - minorCellCoord.y) <= gridLineWidth);
 	//set the color accordingly
 	vec4 result = vec4(0.0f);
-	if (abs(gridCoords.y - 0.5) <= gridLineWidth / 4. && gridCoords.x > 0.5 && gridCoords.x < 0.6)
+	if ((xMajorGrid || yMajorGrid))
 	{
-		result = vec4(1.0, 0., 0., 1.0);
-	}
-	else if (abs(gridCoords.x - 0.5) <= gridLineWidth / 4. && gridCoords.y > 0.5 && gridCoords.y < 0.6)
-	{
-		result = vec4(0., 1., 0., 1.0);
-	}
-	else if ((xMajorGrid || yMajorGrid))
-	{
-		result = vec4(flatColor.rgb * 0.75, 0.5);
+		result = vec4(flatColor.rgb * 0.75, 1.0);
 	}
 	else if ((xMinorGrid || yMinorGrid))
 	{
-		result = vec4(flatColor.rgb * 0.75, 0.25);
+		result = vec4(flatColor.rgb * 0.75, 0.9);
 	}
-	
-
 	else result = vec4(0.0);
 
 	return (result);
-}
+};

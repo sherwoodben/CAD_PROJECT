@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 struct Color
 {
@@ -22,6 +23,7 @@ enum ShaderType
 {
 	DEBUG,
 	PLANE_GRID,
+	SKETCH,
 	AXIS,
 	POINT,
 	FLAT,

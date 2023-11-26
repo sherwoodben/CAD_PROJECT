@@ -24,6 +24,12 @@ public:
 
 	void DeleteObject();
 
+	//vertices that defines the plane
+	static float planeVertices[];
+	//indices of vertex that make
+	//two triangles (a quad)
+	static unsigned int planeIndices[];
+
 private:
 	//grid details:
 	//	major grid spacing given by gridSpacing
@@ -37,11 +43,7 @@ private:
 	//within the plane)
 	glm::vec3 tangentVector;
 
-	//vertices that defines the plane
-	static float planeVertices[];
-	//indices of vertex that make
-	//two triangles (a quad)
-	static unsigned int planeIndices[];
+	
 
 	void InitPlane();
 

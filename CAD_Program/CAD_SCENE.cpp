@@ -2,6 +2,10 @@
 #include "AppGUI.h"
 #include "CAD_APP.h"
 
+#define SCREEN_CLEAR_R 0.5f
+#define SCREEN_CLEAR_G 0.5f
+#define SCREEN_CLEAR_B 0.8f
+
 CAD_SCENE::~CAD_SCENE()
 {
 	//go through each sceneObject
@@ -295,6 +299,7 @@ void CAD_SCENE::UpdateScene()
 
 void CAD_SCENE::RenderScene()
 {
+	//glViewport(0, 0, sceneState.ScreenDimensions[0], sceneState.ScreenDimensions[1]);
 	//enable openGL depth test
 	glEnable(GL_DEPTH_TEST);
 
@@ -305,10 +310,9 @@ void CAD_SCENE::RenderScene()
 	// draw in wireframe
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	//set the clear color
-	glClearColor(0.10f, 0.10f, 0.2f, 1.0f);
+	glClearColor(SCREEN_CLEAR_R, SCREEN_CLEAR_G, SCREEN_CLEAR_B, 1.0f);
 	//clear the window
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	//get the active camera, and get the "projection
 	//matrix" and "view matrix" from that camera:
 	
@@ -346,6 +350,9 @@ void CAD_SCENE::RenderScene()
 			sO->PassShaderData(this->sceneShader);
 
 			sO->RenderObject();
+
+			//std::cout << glGetError() << std::endl;
+
 		}
 	}
 	
@@ -366,6 +373,8 @@ void CAD_SCENE::RenderScene()
 		sO->PassShaderData(this->sceneShader);
 
 		sO->RenderObject();
+
+		//std::cout << glGetError() << std::endl;
 	}
 
 	//done with transparencies; turn on depth mask again

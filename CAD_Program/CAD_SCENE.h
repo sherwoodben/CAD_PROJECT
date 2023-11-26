@@ -15,6 +15,7 @@
 #include "Point.h"
 #include "Axis.h"
 #include "Plane.h"
+#include "Sketch.h"
 #include "Camera.h"
 #include "Shader.h"
 

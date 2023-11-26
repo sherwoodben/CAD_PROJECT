@@ -1,11 +1,14 @@
 #include "AppGUI.h"
 #include "CAD_APP.h"
 #include "CAD_SCENE.h"
-#include "Point.h"
 
 float MenuFlags::tempPoint1[3] = { 0.0f, 0.0f, 0.0f };
 float MenuFlags::tempPoint2[3] = {0.0f, 0.0f, 0.0f};
 char MenuFlags::defaultObjectName[16] = "DEFAULT NAME";
+
+SceneObject* MenuFlags::selectedObject1 = nullptr;
+SceneObject* MenuFlags::selectedObject2 = nullptr;
+SceneObject* MenuFlags::selectedObject3 = nullptr;
 
 void AppGUI::RenderMenuBar(float& yOffset, CAD_APP* currentAppInstance)
 {
@@ -63,6 +66,7 @@ void AppGUI::RenderMenuBar(float& yOffset, CAD_APP* currentAppInstance)
 				if (ImGui::MenuItem("Sketch"))
 				{
 					currentAppInstance->messageManager.ReceiveMessage({ "NEW_OBJECT", "SKETCH" });
+					currentAppInstance->GetMenuFlag()->newSketchDialogue = true;
 				}
 				if (ImGui::MenuItem("Surface"))
 				{
@@ -254,30 +258,54 @@ void AppGUI::RenderSceneTree(int regionWidth, float yOffset, CAD_APP* currentApp
 		//list the objects
 		for (SceneObject* sO : currentAppInstance->GetCurrentScene()->GetSceneObjects())
 		{
-			//if this is a default object, display in a different color:
+
+			ImGui::PushID(sO->GetObjectVAOPointer());
+
 			if (sO->isDefaultObject)
 			{
-				ImGui::TextColored({ 0, 200, 200, 200 }, sO->displayName.c_str());
+				ImGui::PushStyleColor(ImGuiCol_Text, { 0.0f, 200.0f / 255.0f, 200.0f / 255.0f, 1.0f });
 			}
-
-			else {
-				ImGui::Text(sO->displayName.c_str());
+			if (ImGui::Selectable(sO->displayName.c_str(), sO->isSelected, 0, ImGui::CalcTextSize(sO->displayName.c_str())))
+			{
+				currentAppInstance->messageManager.ReceiveMessage({ "SELECT", sO->displayName });
 			}
+			if (sO->isDefaultObject)
+			{
+				ImGui::PopStyleColor();
+			}
+			ImGui::PopID();
+			//if this is a default object, display in a different color:
 			ImGui::SameLine();
-			//now, display what type of object it is (implement this later)
+			//now, display what type of object it is
 			ImGui::TextColored({ 128, 0, 128, 255 }, ("[" + sO->objectType + "]").c_str());
 			ImGui::SameLine();
-			ImGui::PushID(*sO->GetObjectVBOPointer());
-			//check if the object is visible so we know if we should say "Hide" or "Show"
-			bool isVisible = sO->isVisible;
-			std::string hideShowText;
-			if (isVisible) hideShowText = "Hide";
-			else hideShowText = "Show";
-			if (ImGui::Button(hideShowText.c_str()))
+			ImGui::PushID(sO->GetObjectVBOPointer());
+			ImGui::SetCursorPosX({ (float)regionWidth - 1.5f * ImGui::CalcTextSize("...")[0] });
+			if (ImGui::BeginMenu("..."))
 			{
-				sO->isVisible = !(sO->isVisible);
-			}
+				if (sO->isVisible && ImGui::MenuItem("Hide"))
+				{
+					sO->isVisible = false;
+				}
+				else if (!sO->isVisible && ImGui::MenuItem("Show"))
+				{
+					sO->isVisible = true;
+				}
+				if (sO->isVisible && ImGui::MenuItem("Focus View"))
+				{
+					glm::vec3 camOffset = currentAppInstance->GetCurrentScene()->sceneState.SceneCamera.GetCameraState()->cameraPosition;
+					camOffset -= currentAppInstance->GetCurrentScene()->sceneState.SceneCamera.GetTarget();
 
+					currentAppInstance->GetCurrentScene()->sceneState.SceneCamera.SetTarget(sO->GetObjectPosition());
+
+					currentAppInstance->GetCurrentScene()->sceneState.SceneCamera.GetCameraState()->cameraPosition = sO->GetObjectPosition() + camOffset;
+				}
+				if (ImGui::MenuItem("Delete", nullptr, nullptr, !sO->isDefaultObject))
+				{
+					currentAppInstance->messageManager.ReceiveMessage({ "DELETE", sO->displayName });
+				}
+				ImGui::EndMenu();
+			}
 			ImGui::PopID();
 		}
 		ImGui::TreePop();
@@ -468,6 +496,67 @@ void AppGUI::NewPlaneDialogue(CAD_SCENE* currentScene)
 	}
 }
 
+void AppGUI::NewSketchDialogue(CAD_SCENE* currentScene)
+{
+	ImGui::OpenPopup("New Sketch Dialogue");
+	if (ImGui::BeginPopup("New Sketch Dialogue"))
+	{
+		ImGui::Text("Select a plane for the sketch.");
+		std::string previewText = "-";
+		if (MenuFlags::selectedObject1)
+		{
+			previewText = MenuFlags::selectedObject1->displayName;
+		}
+		if (ImGui::BeginCombo("Sketch Plane", previewText.c_str()))
+		{
+			for (SceneObject* sO : currentScene->GetDatumObjects())
+			{
+				if (sO->objectType == "Plane")
+				{
+					if (ImGui::Selectable(sO->displayName.c_str()))
+					{
+						MenuFlags::selectedObject1 = sO;
+					}
+				}
+			}
+			ImGui::EndCombo();
+		}
+
+		ImGui::InputText("Sketch Name", MenuFlags::defaultObjectName, 16 * sizeof(char), 0, 0, 0);
+		if (!AppGUI::CheckValidName(currentScene, MenuFlags::defaultObjectName))
+		{
+			ImGui::TextColored({ 1.0f, 0, 0, 1.0f }, "Name is already used!");
+		}
+		if (!MenuFlags::selectedObject1)
+		{
+			ImGui::TextColored({ 1.0f, 0, 0, 1.0f }, "No plane selected!");
+		}
+		if (ImGui::Button("Confirm"))
+		{
+			if (AppGUI::CheckValidName(currentScene, MenuFlags::defaultObjectName) && MenuFlags::selectedObject1)
+			{
+				Sketch* newSketchObject = new Sketch((Plane*)MenuFlags::selectedObject1);
+				newSketchObject->displayName = std::string(MenuFlags::defaultObjectName);
+				currentScene->AddSceneObject(newSketchObject);
+				newSketchObject = nullptr;
+
+				AppGUI::ResetDefaultValues();
+
+				currentScene->GetParentApplication()->GetMenuFlag()->newSketchDialogue = false;
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel"))
+		{
+			AppGUI::ResetDefaultValues();
+
+			currentScene->GetParentApplication()->GetMenuFlag()->newSketchDialogue = false;
+		}
+
+		ImGui::EndPopup();
+	}
+}
+
 void AppGUI::ResetDefaultValues()
 {
 	MenuFlags::tempPoint1[0] = 0.0f;
@@ -494,4 +583,8 @@ void AppGUI::ResetDefaultValues()
 	MenuFlags::defaultObjectName[13] = '\0';
 	MenuFlags::defaultObjectName[14] = '\0';
 	MenuFlags::defaultObjectName[15] = '\0';
+
+	MenuFlags::selectedObject1 = nullptr;
+	MenuFlags::selectedObject2 = nullptr;
+	MenuFlags::selectedObject3 = nullptr;
 }

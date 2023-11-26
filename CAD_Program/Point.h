@@ -14,7 +14,7 @@ public:
 	void DeleteObject();
 
 private:
-	double pointSize = 0.02f;
+	double pointSize = 0.01f;
 
 	static float pointVertices[];
 	static unsigned int pointIndices[];

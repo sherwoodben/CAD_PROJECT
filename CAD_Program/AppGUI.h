@@ -3,6 +3,7 @@
 
 class CAD_APP;
 class CAD_SCENE;
+class SceneObject;
 
 //will eventualyl turn this into just flags
 //instead of a bunch of bools, but this is
@@ -18,11 +19,15 @@ struct MenuFlags
 	bool newPointDialogue = false;
 	bool newAxisDialogue = false;
 	bool newPlaneDialogue = false;
+	bool newSketchDialogue = false;
 
 	static float tempPoint1[];
 	static float tempPoint2[];
 	static float tempPoint3[];
 	static char defaultObjectName[];
+	static SceneObject* selectedObject1;
+	static SceneObject* selectedObject2;
+	static SceneObject* selectedObject3;
 	
 };
 
@@ -41,7 +46,10 @@ namespace AppGUI {
 
 	void NewPlaneDialogue(CAD_SCENE* currentScene);
 
+	void NewSketchDialogue(CAD_SCENE* currentScene);
+
 	bool CheckValidName(CAD_SCENE* currentScene, char* testName);
 
 	void ResetDefaultValues();
+
 }

@@ -345,6 +345,10 @@ void CAD_APP::RenderGUI()
 	{
 		AppGUI::NewPlaneDialogue(this->currentScene);
 	}
+	if (this->appMenuFlags.newSketchDialogue)
+	{
+		AppGUI::NewSketchDialogue(this->currentScene);
+	}
 	//render Dear ImGUI GUI
 	//begin a test window -- will eventually become
 	//the "scene tree" --bit of a misnomer for now
