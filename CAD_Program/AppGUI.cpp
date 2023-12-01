@@ -283,6 +283,11 @@ void AppGUI::RenderSceneTree(int regionWidth, float yOffset, CAD_APP* currentApp
 			ImGui::SetCursorPosX({ (float)regionWidth - 1.5f * ImGui::CalcTextSize("...")[0] });
 			if (ImGui::BeginMenu("..."))
 			{
+				if (sO->objectType == "Sketch" && ImGui::MenuItem("Edit"))
+				{
+					currentAppInstance->GetMenuFlag()->editSketchMenu = true;
+					currentAppInstance->GetMenuFlag()->selectedObject1 = sO;
+				}
 				if (sO->isVisible && ImGui::MenuItem("Hide"))
 				{
 					sO->isVisible = false;
@@ -314,7 +319,6 @@ void AppGUI::RenderSceneTree(int regionWidth, float yOffset, CAD_APP* currentApp
 
 	ImGui::End();
 }
-
 
 bool AppGUI::CheckValidName(CAD_SCENE* currentScene, char* testName)
 {
@@ -531,6 +535,7 @@ void AppGUI::NewSketchDialogue(CAD_SCENE* currentScene)
 		{
 			ImGui::TextColored({ 1.0f, 0, 0, 1.0f }, "No plane selected!");
 		}
+		ImGui::Checkbox("Edit on Create", &currentScene->GetParentApplication()->GetMenuFlag()->editOnCreate);
 		if (ImGui::Button("Confirm"))
 		{
 			if (AppGUI::CheckValidName(currentScene, MenuFlags::defaultObjectName) && MenuFlags::selectedObject1)
@@ -538,11 +543,19 @@ void AppGUI::NewSketchDialogue(CAD_SCENE* currentScene)
 				Sketch* newSketchObject = new Sketch((Plane*)MenuFlags::selectedObject1);
 				newSketchObject->displayName = std::string(MenuFlags::defaultObjectName);
 				currentScene->AddSceneObject(newSketchObject);
-				newSketchObject = nullptr;
+				
 
 				AppGUI::ResetDefaultValues();
 
 				currentScene->GetParentApplication()->GetMenuFlag()->newSketchDialogue = false;
+
+				if (currentScene->GetParentApplication()->GetMenuFlag()->editOnCreate)
+				{
+					currentScene->GetParentApplication()->GetMenuFlag()->editSketchMenu = true;
+					currentScene->GetParentApplication()->GetMenuFlag()->selectedObject1 = (SceneObject*)newSketchObject;
+				}
+
+				newSketchObject = nullptr;
 			}
 		}
 		ImGui::SameLine();
@@ -551,6 +564,25 @@ void AppGUI::NewSketchDialogue(CAD_SCENE* currentScene)
 			AppGUI::ResetDefaultValues();
 
 			currentScene->GetParentApplication()->GetMenuFlag()->newSketchDialogue = false;
+		}
+
+		ImGui::EndPopup();
+	}
+}
+
+void AppGUI::EditSketchMenu(CAD_SCENE* currentScene, SceneObject* activeSketch)
+{
+	ImGui::OpenPopup("Edit Sketch Menu");
+	if (ImGui::BeginPopup("Edit Sketch Menu"))
+	{
+		std::string displayText = "Editing Sketch: " + activeSketch->displayName;
+		ImGui::Text(displayText.c_str());
+
+		if (ImGui::Button("Exit Sketch Mode"))
+		{
+			AppGUI::ResetDefaultValues();
+
+			currentScene->GetParentApplication()->GetMenuFlag()->editSketchMenu = false;
 		}
 
 		ImGui::EndPopup();
@@ -588,3 +620,4 @@ void AppGUI::ResetDefaultValues()
 	MenuFlags::selectedObject2 = nullptr;
 	MenuFlags::selectedObject3 = nullptr;
 }
+

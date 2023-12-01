@@ -39,6 +39,9 @@ void CAD_APP::MainLoop()
 
 	//render application:
 	this->Render();
+
+	//do the late update (i.e. deleting objects)
+	this->LateUpdate();
 }
 
 bool CAD_APP::InitializeApp()
@@ -47,8 +50,10 @@ bool CAD_APP::InitializeApp()
 	if (!this->InitializeGlad()) { return false; };
 	if (!this->InitializeDearImGui()) { return false; };
 	
-	if (!this->InitializeShader()) { return false; };
-	this->applicationShader->Use();
+	if (!this->InitializeShaders()) { return false; };
+	
+	//default to the flat shader
+	this->flatShader->Use();
 
 	//load an empty scene to start
 	this->currentScene = this->LoadEmptyScene();
@@ -59,7 +64,10 @@ bool CAD_APP::InitializeApp()
 void CAD_APP::ShutdownApp()
 {
 	//delete the shader program
-	this->applicationShader->deleteProgram();
+	this->flatShader->deleteProgram();
+	this->planeGridShader->deleteProgram();
+	this->inSketchShader->deleteProgram();
+	this->texturedPlaneShader->deleteProgram();
 
 	//clean up Dear ImGui
 	ImGui_ImplOpenGL3_Shutdown();
@@ -218,6 +226,7 @@ bool CAD_APP::InitializeGlfw()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
 	//for mac:
 	//glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
@@ -273,10 +282,28 @@ bool CAD_APP::InitializeDearImGui()
 	return true;
 }
 
-bool CAD_APP::InitializeShader()
+bool CAD_APP::InitializeShaders()
 {
-	this->applicationShader = new Shader("shader.vs", "shader.fs");
-	if (!this->applicationShader)
+	this->flatShader = new Shader("shader.vs", "flat_shader.fs");
+	if (!this->flatShader)
+	{
+		return false;
+	}
+
+	this->planeGridShader = new Shader("shader.vs", "plane_shader.fs");
+	if (!this->planeGridShader)
+	{
+		return false;
+	}
+
+	this->inSketchShader = new Shader("sketch_from_objects.vs", "sketch_from_objects.fs");
+	if (!this->inSketchShader)
+	{
+		return false;
+	}
+
+	this->texturedPlaneShader = new Shader("shader.vs", "plane_textured.fs");
+	if (!this->texturedPlaneShader)
 	{
 		return false;
 	}
@@ -295,6 +322,11 @@ void CAD_APP::InitializeDirectories()
 
 void CAD_APP::NewImGuiFrame()
 {
+	if (glfwGetWindowAttrib(this->applicationWindow, GLFW_ICONIFIED))
+	{
+		return;
+	}
+
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
@@ -302,6 +334,10 @@ void CAD_APP::NewImGuiFrame()
 
 void CAD_APP::Update()
 {
+	if (glfwGetWindowAttrib(this->applicationWindow, GLFW_ICONIFIED))
+	{
+		return;
+	}
 	//send the latest messages from the manager
 	while (CAD_APP::messageManager.QueueHasMessages())
 	{
@@ -311,8 +347,20 @@ void CAD_APP::Update()
 	this->currentScene->UpdateScene();
 }
 
+void CAD_APP::LateUpdate()
+{
+	this->currentScene->DeleteObjects();
+}
+
 void CAD_APP::Render()
 {
+
+	if (glfwGetWindowAttrib(this->applicationWindow, GLFW_ICONIFIED))
+	{
+		glfwPollEvents();
+		return;
+	}
+
 	//render application
 	this->currentScene->RenderScene();
 	
@@ -349,6 +397,10 @@ void CAD_APP::RenderGUI()
 	{
 		AppGUI::NewSketchDialogue(this->currentScene);
 	}
+	if (this->appMenuFlags.editSketchMenu)
+	{
+		AppGUI::EditSketchMenu(this->currentScene, this->appMenuFlags.selectedObject1);
+	}
 	//render Dear ImGUI GUI
 	//begin a test window -- will eventually become
 	//the "scene tree" --bit of a misnomer for now
@@ -379,7 +431,6 @@ bool CAD_APP::LoadSceneFromFile(std::string scenePath)
 CAD_SCENE* CAD_APP::LoadEmptyScene()
 {
 	CAD_SCENE* emptyScene = new CAD_SCENE(this);
-	emptyScene->SetShader(this->applicationShader);
 
 	return emptyScene;
 }

@@ -17,12 +17,17 @@ public:
 	Plane(const char* basisDirection);
 	~Plane() {};
 
-	void RenderObject();
+	void PassShaderData(Shader* shader);
+	void RenderObject(Shader* shader);
 
 	//gets the model matrix of the object
 	glm::mat4 GetModelMatrix();
 
 	void DeleteObject();
+
+	glm::vec3 GetNormalVector() { return this->normalVector; };
+	glm::vec3 GetPlaneRightVector() { return this->tangentVector; };
+	glm::vec3 GetPlaneUpVector() { return glm::cross(this->normalVector, this->tangentVector); };
 
 	//vertices that defines the plane
 	static float planeVertices[];
@@ -42,8 +47,6 @@ private:
 	//plane tangent vector (defines the X-axis
 	//within the plane)
 	glm::vec3 tangentVector;
-
-	
 
 	void InitPlane();
 

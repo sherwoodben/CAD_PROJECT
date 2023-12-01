@@ -80,6 +80,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
 void Shader::Use()
 {
 	glUseProgram(this->ID);
+	//std::cout << "Switched to Shader #" << this->ID << std::endl;
 }
 
 void Shader::deleteProgram()

@@ -14,7 +14,8 @@ public:
 	~Axis() {};
 
 	//Implement specific render for axes (if any)
-	void RenderObject();
+	void PassShaderData(Shader* shader);
+	void RenderObject(Shader* shader);
 
 	//gets the model matrix of the object
 	glm::mat4 GetModelMatrix();

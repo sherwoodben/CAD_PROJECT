@@ -7,7 +7,8 @@ public:
 
 	~Point() {};
 
-	void RenderObject();
+	void PassShaderData(Shader* shader);
+	void RenderObject(Shader* shader);
 
 	glm::mat4 GetModelMatrix();
 

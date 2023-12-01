@@ -59,9 +59,6 @@ public:
 
 	//get the parent app
 	CAD_APP* GetParentApplication() { return this->parentApplication; };
-	
-	Shader* GetShader() { return this->sceneShader; };
-	void SetShader(Shader* shader) { this->sceneShader = shader; };
 
 	void LoadDefaultObjects();
 	void LoadDefaultPlanes();
@@ -70,6 +67,8 @@ public:
 	void AddSceneObject(SceneObject* objectToAdd);
 	std::vector<SceneObject*> GetSceneObjects() { return this->sceneObjects; };
 	std::vector<SceneObject*> GetDatumObjects() { return this->datumObjects; };
+
+	void DeleteObjects();
 
 	void DoArcBallCam();
 	void DoTranslateCam();
@@ -97,11 +96,6 @@ private:
 
 	//a vector to keep track of DATUM SceneObjects
 	std::vector<SceneObject*> datumObjects;
-
-	//keep track of the scene's shader so we can
-	//update variables within the shader during
-	//rendering
-	Shader* sceneShader = nullptr;
 
 	//a pointer to the application
 	CAD_APP* parentApplication = nullptr;

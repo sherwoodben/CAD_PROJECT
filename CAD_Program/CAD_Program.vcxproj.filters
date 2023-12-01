@@ -40,6 +40,12 @@
     <Filter Include="Header Files\Objects\Sketch Objects">
       <UniqueIdentifier>{b2777fb2-8be5-4d1c-a440-14c1b2496a2a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Shaders\Vertex Shaders">
+      <UniqueIdentifier>{432c649a-ccc8-43bb-9c30-6a18eae1f410}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders\Fragment Shaders">
+      <UniqueIdentifier>{976ed894-f215-40f2-ad19-0414070d2b6f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -94,10 +100,10 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Point.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Objects</Filter>
     </ClCompile>
     <ClCompile Include="Sketch.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Objects\Scene Objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -159,18 +165,36 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Point.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Objects\Scene Objects</Filter>
     </ClInclude>
     <ClInclude Include="Sketch.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Objects\Scene Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="SketchObjects.h">
+      <Filter>Header Files\Objects\Sketch Objects</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader.vs">
-      <Filter>Resource Files\Shaders</Filter>
+      <Filter>Resource Files\Shaders\Vertex Shaders</Filter>
     </None>
     <None Include="shader.fs">
-      <Filter>Resource Files\Shaders</Filter>
+      <Filter>Resource Files\Shaders\Fragment Shaders</Filter>
+    </None>
+    <None Include="sketch_from_objects.fs">
+      <Filter>Resource Files\Shaders\Fragment Shaders</Filter>
+    </None>
+    <None Include="plane_shader.fs">
+      <Filter>Resource Files\Shaders\Fragment Shaders</Filter>
+    </None>
+    <None Include="flat_shader.fs">
+      <Filter>Resource Files\Shaders\Fragment Shaders</Filter>
+    </None>
+    <None Include="plane_textured.fs">
+      <Filter>Resource Files\Shaders\Fragment Shaders</Filter>
+    </None>
+    <None Include="sketch_from_objects.vs">
+      <Filter>Resource Files\Shaders\Vertex Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

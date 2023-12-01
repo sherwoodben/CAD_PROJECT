@@ -83,6 +83,46 @@ void CAD_SCENE::AddSceneObject(SceneObject* objectToAdd)
 	
 }
 
+void CAD_SCENE::DeleteObjects()
+{
+	int numSceneObjects = this->sceneObjects.size();
+	int numDatumObjects = this->datumObjects.size();
+
+	for (int objIdx = numSceneObjects - 1; objIdx >= 0; objIdx--)
+	{
+		if (this->sceneObjects[objIdx]->tryDelete)
+		{
+			if (this->sceneObjects[objIdx]->canDelete)
+			{
+				delete sceneObjects[objIdx];
+				sceneObjects[objIdx] = nullptr;
+				this->sceneObjects.erase(this->sceneObjects.begin() + objIdx);
+			}
+			else
+			{
+				this->sceneObjects[objIdx]->tryDelete = false;
+			}
+		}
+	}
+
+	for (int datumIdx = numDatumObjects - 1; datumIdx >= 0; datumIdx--)
+	{
+		if (this->datumObjects[datumIdx]->tryDelete)
+		{
+			if (this->datumObjects[datumIdx]->canDelete)
+			{
+				delete datumObjects[datumIdx];
+				datumObjects[datumIdx] = nullptr;
+				this->sceneObjects.erase(this->datumObjects.begin() + datumIdx);
+			}
+			else
+			{
+				this->datumObjects[datumIdx]->tryDelete = false;
+			}
+		}
+	}
+}
+
 void CAD_SCENE::DoArcBallCam()
 {
 	double dAngleX = (2.0f * glm::pi<double>()) / (double)this->sceneState.ScreenDimensions[0];
@@ -208,6 +248,23 @@ void CAD_SCENE::ProcessMessage(Message msg)
 
 void CAD_SCENE::HandleDeleteObjectMessage(std::string objToDelete)
 {
+	for (SceneObject* sO : this->sceneObjects)
+	{
+		if (sO->displayName == objToDelete)
+		{
+			sO->tryDelete = true;
+			return;
+		}
+	}
+
+	for (SceneObject* sO : this->datumObjects)
+	{
+		if (sO->displayName == objToDelete)
+		{
+			sO->tryDelete = true;
+			return;
+		}
+	}
 }
 
 void CAD_SCENE::HandleNewObjectMessage(std::string typeToAdd)
@@ -321,9 +378,18 @@ void CAD_SCENE::RenderScene()
 	//and get the view matrix
 	glm::mat4 viewMatrix = this->sceneState.SceneCamera.GetViewMatrix();
 
-	//update the uniforms for the shader with the camera matrices
-	this->GetShader()->setMat4("projection", projectionMatrix);
-	this->GetShader()->setMat4("view", viewMatrix);
+	//update the uniforms for the shaders with the camera matrices
+	this->parentApplication->flatShader->Use();
+	this->parentApplication->flatShader->setMat4("projection", projectionMatrix);
+	this->parentApplication->flatShader->setMat4("view", viewMatrix);
+
+	this->parentApplication->planeGridShader->Use();
+	this->parentApplication->planeGridShader->setMat4("projection", projectionMatrix);
+	this->parentApplication->planeGridShader->setMat4("view", viewMatrix);
+
+	this->parentApplication->texturedPlaneShader->Use();
+	this->parentApplication->texturedPlaneShader->setMat4("projection", projectionMatrix);
+	this->parentApplication->texturedPlaneShader->setMat4("view", viewMatrix);
 
 	std::vector<SceneObject*> objectsWithTransparency;
 
@@ -347,11 +413,22 @@ void CAD_SCENE::RenderScene()
 				continue;
 			}
 
-			sO->PassShaderData(this->sceneShader);
+			//pass different shader to render function depending on object type
+			if (sO->objectType == "Point" || sO->objectType == "Axis")
+			{
+				sO->RenderObject(this->parentApplication->flatShader);
+			}
+			else if (sO->objectType == "Plane")
+			{
+				sO->RenderObject(this->parentApplication->planeGridShader);
+			}
+			else if (sO->objectType == "Sketch")
+			{
+				Sketch* sketch = (Sketch*)sO;
 
-			sO->RenderObject();
-
-			//std::cout << glGetError() << std::endl;
+				sketch->RenderSketchObjects(this->parentApplication->inSketchShader);
+				sketch->RenderObject(this->parentApplication->texturedPlaneShader);
+			}
 
 		}
 	}
@@ -370,11 +447,22 @@ void CAD_SCENE::RenderScene()
 			continue;
 		}
 
-		sO->PassShaderData(this->sceneShader);
+		//pass different shader to render function depending on object type
+		if (sO->objectType == "Point" || sO->objectType == "Axis")
+		{
+			sO->RenderObject(this->parentApplication->flatShader);
+		}
+		else if (sO->objectType == "Plane")
+		{
+			sO->RenderObject(this->parentApplication->planeGridShader);
+		}
+		else if (sO->objectType == "Sketch")
+		{
+			Sketch* sketch = (Sketch*)sO;
 
-		sO->RenderObject();
-
-		//std::cout << glGetError() << std::endl;
+			sketch->RenderSketchObjects(this->parentApplication->inSketchShader);
+			sketch->RenderObject(this->parentApplication->texturedPlaneShader);
+		}
 	}
 
 	//done with transparencies; turn on depth mask again

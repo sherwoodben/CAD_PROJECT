@@ -20,6 +20,9 @@ struct MenuFlags
 	bool newAxisDialogue = false;
 	bool newPlaneDialogue = false;
 	bool newSketchDialogue = false;
+	bool editSketchMenu = false;
+
+	bool editOnCreate = true;
 
 	static float tempPoint1[];
 	static float tempPoint2[];
@@ -47,6 +50,8 @@ namespace AppGUI {
 	void NewPlaneDialogue(CAD_SCENE* currentScene);
 
 	void NewSketchDialogue(CAD_SCENE* currentScene);
+
+	void EditSketchMenu(CAD_SCENE* currentScene, SceneObject* activeSketch);
 
 	bool CheckValidName(CAD_SCENE* currentScene, char* testName);
 

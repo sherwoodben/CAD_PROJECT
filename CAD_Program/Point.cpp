@@ -35,8 +35,35 @@ unsigned int Point::pointIndices[] =
 
 };
 
-void Point::RenderObject()
+void Point::PassShaderData(Shader* shader)
 {
+    shader->Use();
+    //then update the shader
+    shader->setMat4("model", this->GetModelMatrix());
+
+    //set the flat color
+    float r, g, b, a;
+    r = (float)this->GetFlatColor().r;
+    g = (float)this->GetFlatColor().g;
+    b = (float)this->GetFlatColor().b;
+    a = (float)this->GetFlatColor().a;
+    //scale them to be between 0 and 1 (divide by 255)
+    r /= 255.0f;
+    g /= 255.0f;
+    b /= 255.0f;
+    a /= 255.0f;
+    //now, make  the color a vec4
+    glm::vec4 flatColor = glm::vec4(r, g, b, 1.0f);
+    //update the flat color uniform and the alpha uniform
+    shader->setVec4("flatColor", flatColor);
+    shader->setFloat("alpha", a);
+
+    //std::cout << glGetError() << std::endl;
+}
+
+void Point::RenderObject(Shader* shader)
+{
+    this->PassShaderData(shader);
     this->RenderAsTriangles(NUM_POINT_INDICES);
 }
 

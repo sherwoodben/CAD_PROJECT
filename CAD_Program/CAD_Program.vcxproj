@@ -189,10 +189,16 @@
     <ClInclude Include="SceneObject.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Sketch.h" />
+    <ClInclude Include="SketchObjects.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="flat_shader.fs" />
+    <None Include="plane_shader.fs" />
+    <None Include="plane_textured.fs" />
     <None Include="shader.fs" />
     <None Include="shader.vs" />
+    <None Include="sketch_from_objects.fs" />
+    <None Include="sketch_from_objects.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
