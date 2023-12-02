@@ -105,6 +105,12 @@
     <ClCompile Include="Sketch.cpp">
       <Filter>Source Files\Objects\Scene Objects</Filter>
     </ClCompile>
+    <ClCompile Include="SketchObjects.cpp">
+      <Filter>Source Files\Objects\Sketch Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="CurveFunctions.cpp">
+      <Filter>Source Files\Objects\Scene Objects</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\imgui\imconfig.h">
@@ -172,6 +178,12 @@
     </ClInclude>
     <ClInclude Include="SketchObjects.h">
       <Filter>Header Files\Objects\Sketch Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="3DCurves.h">
+      <Filter>Header Files\Objects\Scene Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="CurveFunctions.h">
+      <Filter>Header Files\Objects\Scene Objects</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

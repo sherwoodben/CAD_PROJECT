@@ -115,7 +115,8 @@ glm::mat4 Plane::GetModelMatrix()
 	glm::mat4 modelMatrix = glm::mat4(1.0f);
 
 	////first, scale the matrix
-	glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{this->GetObjectScale()});
+	glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{ 50.0f, 50.0f, 50.0f });
+	//scaleMatrix = glm::scale(scaleMatrix, glm::vec3{ WORLD_SCALAR, WORLD_SCALAR, WORLD_SCALAR });
 
 	glm::vec3 surfNormal = glm::normalize(this->normalVector);
 	glm::vec3 surfTangent = glm::normalize(this->tangentVector);

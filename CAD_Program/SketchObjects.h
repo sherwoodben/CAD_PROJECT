@@ -4,24 +4,65 @@
 
 #include "SceneObject.h"
 #include "Plane.h"
+#include "CurveFunctions.h"
 
 #define MAX_CTRL_PTS 16
-#define CURVE_QUALITY 65
+#define CURVE_QUALITY 18
 
-struct SketchPoint
+struct SketchObject
+{
+	SketchObject() { this->objectID = this->objCounter++; };
+	~SketchObject() {};
+
+	std::string displayName = "";
+
+	virtual void Render(Shader* shader) = 0;
+	virtual void CalculateDisplayPoints() = 0;
+
+	virtual std::string GetName() = 0;
+
+	std::string GetNameAndID() { return (this->GetName() + " " + std::to_string(this->objectID)); };
+
+	void SetDisplayName(std::string newName)
+	{
+		this->displayName = newName;
+	}
+
+	bool isSelected = false;
+
+	bool tryDelete = false;
+	bool canDelete = true;
+
+	unsigned int objectID = -1;
+
+	static unsigned int objCounter;
+};
+
+struct SketchPoint : public SketchObject
 {
 	glm::vec2 pos = glm::vec2(0.0f, 0.0f);
 
-	SketchPoint(float x, float y) : pos(glm::vec2(x, y)) {};
-	SketchPoint() {};
+	SketchPoint(float x, float y) : pos(glm::vec2(x, y)) { this->CalculateDisplayPoints(); };
+	SketchPoint() { this->CalculateDisplayPoints(); };
+
+	std::string GetName()
+	{
+		if (this->displayName == "")
+		{
+			return "Point";
+		}
+		
+		return this->displayName;
+	};
+
+	float displayPoints[2] = {0.0f, 0.0f};
 
 	void Render(Shader* shader)
 	{
 		unsigned int VBO;
 		glGenBuffers(1, &VBO);
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		float data[2] = { pos.x, pos.y };
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 2, data, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 2, this->displayPoints, GL_STATIC_DRAW);
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
@@ -32,9 +73,15 @@ struct SketchPoint
 		glDeleteBuffers(1, &VBO);
 
 	};
+
+	void CalculateDisplayPoints()
+	{
+		this->displayPoints[0] = this->pos.x;
+		this->displayPoints[1] = this->pos.y;
+	}
 };
 
-struct SketchCurve
+struct SketchCurve : public SketchObject
 {
 	float displayPoints[2 * CURVE_QUALITY];
 
@@ -48,9 +95,11 @@ struct SketchCurve
 
 	~SketchCurve() {};
 
+	virtual std::string GetName() = 0;
+
 	virtual void CalculateDisplayPoints() = 0;
 
-	virtual void Render(Shader* shader)
+	void Render(Shader* shader)
 	{
 		unsigned int VBO;
 		glGenBuffers(1, &VBO);
@@ -59,7 +108,7 @@ struct SketchCurve
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
-		glLineWidth(2.5f);
+		glLineWidth(3.0f);
 		shader->setVec4("objectColor", glm::vec4(0.1f, 0.1f, 0.1f, 1.0f));
 		glDrawArrays(GL_LINE_STRIP, 0, CURVE_QUALITY);
 
@@ -69,10 +118,12 @@ struct SketchCurve
 	
 };
 
-struct SketchLine
+struct SketchLine : public SketchObject
 {
 	SketchPoint p1;
 	SketchPoint p2;
+
+	float displayPoints[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	SketchLine(SketchPoint point1, SketchPoint point2, bool reversed = false)
 	{
@@ -94,10 +145,24 @@ struct SketchLine
 	{
 	};
 
+	std::string GetName()
+	{
+		if (this->displayName == "")
+		{
+			return "Line";
+		}
+
+		return this->displayName;
+	};
+
 	void CalculateDisplayPoints()
 	{
-		
+		this->displayPoints[0] = this->p1.pos.x;
+		this->displayPoints[1] = this->p1.pos.y;
+		this->displayPoints[2] = this->p2.pos.x;
+		this->displayPoints[3] = this->p2.pos.y;
 	}
+
 
 	void Render(Shader* shader)
 	{
@@ -109,7 +174,7 @@ struct SketchLine
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
-		glLineWidth(2.5f);
+		glLineWidth(3.0f);
 		shader->setVec4("objectColor", glm::vec4(0.1f, 0.1f, 0.1f, 1.0f));
 		glDrawArrays(GL_LINES, 0, 2);
 
@@ -122,6 +187,7 @@ struct SketchArc : public SketchCurve
 	SketchPoint p1;
 	SketchPoint p2;
 	SketchPoint arcCenter;
+	float arcRadius;
 
 	SketchArc(SketchPoint p1, SketchPoint p2, SketchPoint arcCenter, bool reversed = false)
 		: SketchCurve()
@@ -139,8 +205,49 @@ struct SketchArc : public SketchCurve
 			this->arcCenter = arcCenter;
 		}
 
-		this->CalculateDisplayPoints();
+		glm::vec2 OP1 = this->p1.pos - this->arcCenter.pos;
+		glm::vec2 OP2 = this->p2.pos - this->arcCenter.pos;
 
+		float rad1 = sqrt(OP2.x * OP2.x + OP2.y * OP2.y);
+		float rad2 = sqrt(OP2.x * OP2.x + OP2.y * OP2.y);
+
+
+		if (rad1 != rad2)
+		{
+			this->tryDelete = true;
+		}
+		else
+		{
+			this->CalculateDisplayPoints();
+		}
+	};
+
+	SketchArc(SketchPoint arcCenter, SketchPoint p1, float thetaExtent) : SketchCurve()
+	{
+		this->p1 = p1;
+		this->arcCenter = arcCenter;
+
+		glm::vec2 OP1 = p1.pos - arcCenter.pos;
+		this->arcRadius = sqrt(OP1.x*OP1.x + OP1.y*OP1.y);
+		glm::vec2 axis = glm::normalize(OP1);
+		float angle = glm::acos(glm::dot(axis, glm::vec2(1.0f, 0.0f)));
+
+		float p2x = this->arcRadius * glm::cos(angle - thetaExtent) + arcCenter.pos.x;
+		float p2y = this->arcRadius * glm::sin(angle - thetaExtent) + arcCenter.pos.y;
+
+		this->p2 = SketchPoint(p2x, p2y);
+
+		this->CalculateDisplayPoints();
+	}
+
+	std::string GetName()
+	{
+		if (this->displayName == "")
+		{
+			return "Arc";
+		}
+
+		return this->displayName;
 	};
 
 	void CalculateDisplayPoints()
@@ -186,7 +293,6 @@ struct SketchBSpline : public SketchCurve
 
 	SketchBSpline() : SketchCurve()
 	{
-
 	};
 
 	~SketchBSpline()
@@ -194,6 +300,51 @@ struct SketchBSpline : public SketchCurve
 		if (this->knots != nullptr)
 		{
 			delete[] this->knots;
+		}
+	}
+
+	std::string GetName()
+	{
+		if (this->displayName == "")
+		{
+			return "B-Spline";
+		}
+
+		return this->displayName;
+	};
+
+	void UpdateKnots()
+	{
+		if (this->knots != nullptr)
+		{
+			delete[] knots;
+		}
+
+		this->knots = new int[this->n() + this->k() + 1];
+
+		for (int knotIdx = 0; knotIdx < this->n() + this->k() + 1; knotIdx++)
+		{
+			if ((this->n() + this->k() + 1 < 1) || this->knots == nullptr)
+			{
+				return;
+			}
+			if (knotIdx < this->k())
+			{
+				this->knots[knotIdx] = 0;
+			}
+			else if ((this->k() <= knotIdx) && (knotIdx <= this->n()))
+			{
+				this->knots[knotIdx] = knotIdx - this->k() + 1;
+			}
+			else if ((knotIdx > this->n()) && (knotIdx < this->n() + this->k() + 1))
+			{
+				this->knots[knotIdx] = this->n() - this->k() + 2;
+			}
+		}
+
+		for (int i = 0; i < this->n() + this->k() + 1; i++)
+		{
+			std::cout << this->knots[i] << std::endl;
 		}
 	}
 
@@ -241,87 +392,6 @@ struct SketchBSpline : public SketchCurve
 
 		return 0;
 	};
-	
-	double CalculateBernsteinPolynomial(double curveParam, int i, int k)
-	{
-		if (k == 1)
-		{
-
-			if ((this->knots[i] != this->knots[i + 1]) && (this->knots[i] <= curveParam) && (curveParam <= this->knots[i + 1]))
-			{
-				if (curveParam == 0.0f || curveParam == (double)((this->n() + 1) - (this->k() - 1)))
-				{
-					return 1.0f;
-				}
-				if (this->knots[i] == curveParam || this->knots[i+1] == curveParam)
-				{
-					return 0.5f;
-				}
-				return 1.0f;
-			}
-			return 0.0f;
-		}
-
-		double Nikm1 = this->CalculateBernsteinPolynomial(curveParam, i, k - 1);
-		double Nip1km1 = this->CalculateBernsteinPolynomial(curveParam, i + 1, k - 1);
-		int denom1 = this->knots[i + k - 1] - this->knots[i];
-		int denom2 = this->knots[i + k] - this->knots[i + 1];
-
-		double num1 = (curveParam - (double)this->knots[i]) * Nikm1;
-		double num2 = ((double)this->knots[i + k] - curveParam) * Nip1km1;
-
-		double term1;
-		if ((num1 == denom1) && (num1 == 0.0f))
-		{
-			term1 = 0.0f;
-		}
-		else
-		{
-			term1 = num1 / denom1;
-		}
-
-		double term2;
-		if ((num2 == denom2) && (num2 == 0.0f))
-		{
-			term2 = 0.0f;
-		}
-		else
-		{
-			term2 = num2 / denom2;
-		}
-		return (term1 + term2);
-
-	};
-
-	void UpdateKnots()
-	{
-		if (this->knots != nullptr)
-		{
-			delete[] this->knots;
-		}
-
-		this->knots = new int[this->numKnots()];
-		
-		for (int knotIdx = 0; knotIdx < this->numKnots(); knotIdx++)
-		{
-			if (this->knots == nullptr)
-			{
-				return;
-			}
-			if (knotIdx < this->k())
-			{
-				this->knots[knotIdx] = 0;
-			}
-			else if ((this->k() <= knotIdx) && (knotIdx <= this->n()))
-			{
-				this->knots[knotIdx] = knotIdx - this->k() + 1;
-			}
-			else if (knotIdx > this->n() && (knotIdx < this->numKnots()))
-			{
-				this->knots[knotIdx] = this->n() - this->k() + 2;
-			}
-		}
-	}
 
 	void CalculateDisplayPoints()
 	{
@@ -340,8 +410,8 @@ struct SketchBSpline : public SketchCurve
 
 			for (int i = 0; i < this->n()+1; i++)
 			{
-				pux += this->controlPoints[i].pos.x * CalculateBernsteinPolynomial(u, i, this->k());
-				puy += this->controlPoints[i].pos.y * CalculateBernsteinPolynomial(u, i, this->k());
+				pux += this->controlPoints[i].pos.x * CurveFunctions::BasisFunction(u, i, this->k(), this->n(), this->knots);
+				puy += this->controlPoints[i].pos.y * CurveFunctions::BasisFunction(u, i, this->k(), this->n(), this->knots);
 			}
 
 			this->displayPoints[(2 * displayPointIdx)] = pux;
@@ -361,13 +431,23 @@ struct SketchBezier : public SketchCurve
 
 	SketchBezier() : SketchCurve()
 	{
-
+		this->displayName = "Bezier Curve";
 	};
 
 	~SketchBezier()
 	{
 	
 	}
+
+	std::string GetName()
+	{
+		if (this->displayName == "")
+		{
+			return "Bezier Curve";
+		}
+
+		return this->displayName;
+	};
 
 	void SetControlPoints(int numPoints, SketchPoint* controlPoints)
 	{
@@ -399,54 +479,6 @@ struct SketchBezier : public SketchCurve
 		return this->polynomialOrder;
 	};
 
-	double CalculateBernsteinPolynomial(double curveParam, int i, int n)
-	{
-		double binomialCoeff = this->BinomialCoefficient(n, i);
-		
-		double fac1;
-		if (i == 0)
-		{
-			fac1 = 1.0f;
-		}
-		else
-		{
-			fac1 = pow(curveParam, i);
-		}
-		
-		double fac2;
-		
-		if ((n - i) == 0)
-		{
-			fac2 = 1.0f;
-		}
-		else
-		{
-			fac2 = pow((1.0f - curveParam), (n - i));
-		}
-		
-		return (binomialCoeff * fac1 * fac2);
-
-
-	};
-
-	double BinomialCoefficient(int n, int i)
-	{
-		uint64_t num = this->factorial(n);
-		uint64_t den = this->factorial(i) * this->factorial(n - i);
-
-		return (num / den);
-	};
-
-	uint64_t factorial(int n)
-	{
-		if (n == 0)
-		{
-			return 1;
-		}
-		return (uint64_t)n * this->factorial(n - 1);
-	};
-
-
 	void CalculateDisplayPoints()
 	{
 		for (int displayPointIdx = 0; displayPointIdx < CURVE_QUALITY; displayPointIdx++)
@@ -458,8 +490,8 @@ struct SketchBezier : public SketchCurve
 
 			for (int i = 0; i < this->n() + 1; i++)
 			{
-				pux += this->controlPoints[i].pos.x * CalculateBernsteinPolynomial(u, i, this->n());
-				puy += this->controlPoints[i].pos.y * CalculateBernsteinPolynomial(u, i, this->n());
+				pux += this->controlPoints[i].pos.x * CurveFunctions::BernsteinPolynomial(u, i, this->n());
+				puy += this->controlPoints[i].pos.y * CurveFunctions::BernsteinPolynomial(u, i, this->n());
 			}
 
 			std::cout << "(x,y): " << pux << ", " << puy << std::endl;

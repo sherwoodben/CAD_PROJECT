@@ -32,6 +32,30 @@ void CAD_SCENE::LoadDefaultObjects()
 
 	//SET UP PLANES
 	this->LoadDefaultPlanes();
+
+	Point3D debugPoints1[6] = {
+		Point3D(0.0f, 0.0f, 0.0f),
+		Point3D(1.0f, 1.0f, 1.0f),
+		Point3D(-2.0f, 2.0f, 2.0f),
+		Point3D(-3.0f, -3.0f, 3.0f),
+		Point3D(4.0f, -4.0f, 4.0f),
+		Point3D(5.0f, 5.0f, 5.0f)
+	};
+
+	BSpline3D* testQuadBSpline = new BSpline3D();
+	testQuadBSpline->SetControlPoints(6, 2, debugPoints1);
+	this->AddSceneObject(testQuadBSpline);
+	testQuadBSpline = nullptr;
+
+	BSpline3D* testCubicBSpline = new BSpline3D();
+	testCubicBSpline->SetControlPoints(6, 3, debugPoints1);
+	this->AddSceneObject(testCubicBSpline);
+	testCubicBSpline = nullptr;
+
+	Bezier3D* testBezier = new Bezier3D();
+	testBezier->SetControlPoints(6, debugPoints1);
+	this->AddSceneObject(testBezier);
+	testBezier = nullptr;
 }
 
 void CAD_SCENE::LoadDefaultPlanes()
@@ -85,41 +109,16 @@ void CAD_SCENE::AddSceneObject(SceneObject* objectToAdd)
 
 void CAD_SCENE::DeleteObjects()
 {
-	int numSceneObjects = this->sceneObjects.size();
-	int numDatumObjects = this->datumObjects.size();
-
-	for (int objIdx = numSceneObjects - 1; objIdx >= 0; objIdx--)
+	std::erase_if(this->sceneObjects, [](SceneObject* x) {return (x->canDelete && x->tryDelete); });
+	for (SceneObject* sO : this->sceneObjects)
 	{
-		if (this->sceneObjects[objIdx]->tryDelete)
-		{
-			if (this->sceneObjects[objIdx]->canDelete)
-			{
-				delete sceneObjects[objIdx];
-				sceneObjects[objIdx] = nullptr;
-				this->sceneObjects.erase(this->sceneObjects.begin() + objIdx);
-			}
-			else
-			{
-				this->sceneObjects[objIdx]->tryDelete = false;
-			}
-		}
+		sO->tryDelete = false;
 	}
 
-	for (int datumIdx = numDatumObjects - 1; datumIdx >= 0; datumIdx--)
+	std::erase_if(this->datumObjects, [](SceneObject* x) {return (x->canDelete && x->tryDelete); });
+	for (SceneObject* sO : this->datumObjects)
 	{
-		if (this->datumObjects[datumIdx]->tryDelete)
-		{
-			if (this->datumObjects[datumIdx]->canDelete)
-			{
-				delete datumObjects[datumIdx];
-				datumObjects[datumIdx] = nullptr;
-				this->sceneObjects.erase(this->datumObjects.begin() + datumIdx);
-			}
-			else
-			{
-				this->datumObjects[datumIdx]->tryDelete = false;
-			}
-		}
+		sO->tryDelete = false;
 	}
 }
 
@@ -139,7 +138,7 @@ void CAD_SCENE::DoTranslateCam()
 	double dDeltaX = 1.0f / (double)this->sceneState.ScreenDimensions[0];
 	double dDeltaY = 1.0f / (double)this->sceneState.ScreenDimensions[1];
 
-	double deltaX = this->sceneState.ArcDragVector[0] * dDeltaX;
+	double deltaX =  this->sceneState.ArcDragVector[0] * dDeltaX;
 	double deltaY = -this->sceneState.ArcDragVector[1] * dDeltaY;
 
 	this->sceneState.SceneCamera.TranslateCam(deltaX, deltaY);
@@ -414,7 +413,7 @@ void CAD_SCENE::RenderScene()
 			}
 
 			//pass different shader to render function depending on object type
-			if (sO->objectType == "Point" || sO->objectType == "Axis")
+			if (sO->objectType == "Point" || sO->objectType == "Axis" || sO->objectType == "Curve")
 			{
 				sO->RenderObject(this->parentApplication->flatShader);
 			}

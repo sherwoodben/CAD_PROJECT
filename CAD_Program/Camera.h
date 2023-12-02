@@ -27,12 +27,12 @@ struct CameraState
 	glm::vec3 cameraRight = { 1.0f, 0.0f, 0.0f };
 	glm::vec3 cameraUp = { 0.0f, 0.0f, 1.0f };
 
-	glm::vec3 cameraPosition = { 0.0f, -5.0f, 0.0f };
+	glm::vec3 cameraPosition = { 0.0f, 0.0f, 0.0f };
 
 	float cameraFOV = 45.0f;
-	float cameraZoom = 1.0f;
+	float cameraZoom = 10.0f;
 
-	float cameraClippingPlanes[2] = { 0.005f, 500.0f };
+	float cameraClippingPlanes[2] = { 0.0005f, 500.0f };
 };
 
 //a camera is a simple thing; it should have a position; a

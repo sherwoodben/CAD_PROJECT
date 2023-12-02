@@ -28,10 +28,9 @@ enum ShaderType
 	SKETCH,
 	AXIS,
 	POINT,
+	CURVE,
 	FLAT,
 };
-
-class Shader;
 
 class SceneObject
 {

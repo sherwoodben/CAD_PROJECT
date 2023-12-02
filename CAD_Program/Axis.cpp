@@ -133,8 +133,8 @@ glm::mat4 Axis::GetModelMatrix()
 
     //first scale the matrix-- make it looooooong
     //and skinny (like a line)
-    glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{ 1.0f, this->axisThickness, this->axisThickness });
-
+    glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{ 50.0f, 0.2f, .2f });
+    //scaleMatrix = glm::scale(scaleMatrix, glm::vec3{ WORLD_SCALAR, WORLD_SCALAR, WORLD_SCALAR });
     glm::mat4 rotationMatrix = glm::mat4(1.0f);
     //yaw
     float yaw = glm::atan(this->axisDirection.y, this->axisDirection.x);

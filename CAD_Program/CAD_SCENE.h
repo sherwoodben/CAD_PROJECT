@@ -18,6 +18,7 @@
 #include "Sketch.h"
 #include "Camera.h"
 #include "Shader.h"
+#include "3DCurves.h"
 
 //struct to store the scene state
 struct SceneState
@@ -49,8 +50,8 @@ class CAD_SCENE
 {
 public:
 	//constructor(s) amd destructor
-	CAD_SCENE(CAD_APP* parentApp) : parentApplication(parentApp) { this->LoadDefaultObjects(); };
-	CAD_SCENE(CAD_APP* parentApp, std::string loadPath) : parentApplication(parentApp) { this->LoadDefaultObjects(); };
+	CAD_SCENE(CAD_APP* parentApp) : parentApplication(parentApp) { this->LoadDefaultObjects(); this->SetCameraView(CameraState::ISOMETRIC); };
+	CAD_SCENE(CAD_APP* parentApp, std::string loadPath) : parentApplication(parentApp) { this->LoadDefaultObjects(); this->SetCameraView(CameraState::ISOMETRIC);};
 	~CAD_SCENE();
 
 	//Scene state information; turning this into a

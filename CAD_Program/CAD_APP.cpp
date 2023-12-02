@@ -385,6 +385,10 @@ void CAD_APP::RenderGUI()
 	{
 		AppGUI::NewPointDialogue(this->currentScene);
 	}
+	if (this->appMenuFlags.editPointDialogue)
+	{
+		AppGUI::EditPointDialogue(this->currentScene, (Point*)this->appMenuFlags.selectedObject1);
+	}
 	if (this->appMenuFlags.newAxisDialogue)
 	{
 		AppGUI::NewAxisDialogue(this->currentScene);
@@ -397,10 +401,10 @@ void CAD_APP::RenderGUI()
 	{
 		AppGUI::NewSketchDialogue(this->currentScene);
 	}
-	if (this->appMenuFlags.editSketchMenu)
+	/*if (this->appMenuFlags.editSketchMenu)
 	{
 		AppGUI::EditSketchMenu(this->currentScene, this->appMenuFlags.selectedObject1);
-	}
+	}*/
 	//render Dear ImGUI GUI
 	//begin a test window -- will eventually become
 	//the "scene tree" --bit of a misnomer for now

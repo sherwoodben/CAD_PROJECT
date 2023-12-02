@@ -4,7 +4,7 @@
 #define SKETCH_CLEAR_G 1.0f
 #define SKETCH_CLEAR_B 1.0f
 
-#define SKETCH_RESOLUTION 1024
+#define SKETCH_RESOLUTION 2048
 
 void Sketch::PassShaderData(Shader* shader)
 {
@@ -73,20 +73,11 @@ void Sketch::RenderSketchObjects(Shader* shader)
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	//render all the points:
-	for (SketchPoint point : this->sketchPoints )
+
+	//render all the sketch objects
+	for (SketchObject* sO : this->sketchObjects)
 	{
-		point.Render(shader);
-	}
-	//now, do the lines:
-	for (SketchLine line : this->sketchLines)
-	{
-		line.Render(shader);
-	}
-	//now, do the curves:
-	for (SketchCurve* curve : this->sketchCurves)
-	{
-		curve->Render(shader);
+		sO->Render(shader);
 	}
 
 	glBindVertexArray(0);
@@ -104,11 +95,20 @@ void Sketch::RenderSketchObjects(Shader* shader)
 
 }
 
+void Sketch::DeleteSketchObjects()
+{
+	std::erase_if(this->sketchObjects, [](SketchObject* x) {return (x->canDelete && x->tryDelete); });
+	for (SketchObject* sO : this->sketchObjects)
+	{
+		sO->tryDelete = false;
+	}
+}
+
 void Sketch::DeleteObject()
 {
-	for (int curveIdx = this->sketchCurves.size() - 1; curveIdx >= 0; curveIdx--)
+	for (int objectIndex = this->sketchObjects.size() - 1; objectIndex >= 0; objectIndex--)
 	{
-		delete this->sketchCurves[curveIdx];
+		delete this->sketchObjects[objectIndex];
 	}
 
 	glDeleteTextures(1, &this->sketchRenderedTexture);
@@ -178,7 +178,7 @@ void Sketch::InitSketch()
 	this->AddLine(SketchPoint(0.125f, 0.125f), SketchPoint(0.125f, -0.125f));
 	this->AddLine(SketchPoint(0.125f, -0.125f), SketchPoint(0.25f, -0.125f));
 
-	this->AddCurve(new SketchArc(SketchPoint(-0.25f, 0.25f), SketchPoint(0.25f, 0.25f), SketchPoint(0.0f,0.0f)));
+	this->AddCurve(new SketchArc(SketchPoint(-0.25f, 0.25f), SketchPoint(0.0f,0.0f), glm::pi<float>()));
 
 	SketchPoint tempPoints[8] = {
 		SketchPoint(0.1f,0.0f),

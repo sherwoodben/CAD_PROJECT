@@ -71,9 +71,8 @@ glm::mat4 Point::GetModelMatrix()
 {
     glm::mat4 modelMatrix = glm::mat4(1.0f);
 
-    //first scale the matrix-- make it looooooong
-    //and skinny (like a line)
-    glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{this->pointSize, this->pointSize, this->pointSize});
+    //first scale the matrix
+    glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{0.5f, 0.5f, 0.5f});
     //then, translate the matrix
     glm::mat4 translateMatrix = glm::translate(modelMatrix, this->GetObjectPosition());
 
