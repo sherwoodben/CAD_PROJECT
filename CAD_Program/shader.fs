@@ -4,11 +4,17 @@ uniform int shaderType = -1;
 //here, we define ALL of the valid shader types:
 //DEBUG = anything less than 1 (i.e 0, -1, ...)
 uniform vec4 debugColor;
-//PLANE_GRID = 1
+//PLANE_GRID
 uniform vec4 gridColor;
 in vec2 gridCoordinates;
 vec4 DoPlaneGrid(in vec2 gridCoords);
-//FLAT = 2
+//SKETCH
+uniform sampler2D sketchTexture;
+uniform vec4 sketchObjectColor;
+uniform bool isSketchObject = false;
+vec4 DoSketchImage(in vec2 gridCoords, in sampler2D sketchTex);
+
+//FLAT
 uniform vec4 flatColor;
 out vec4 FragColor;
 void main()
@@ -28,7 +34,14 @@ void main()
 	//SKETCH
 	else if (shaderType == 2)
 	{
-		resultingColor = flatColor;
+		if (isSketchObject)
+		{
+			resultingColor = sketchObjectColor;
+		}
+		else
+		{
+			resultingColor = DoSketchImage(gridCoordinates, sketchTexture);
+		}
 	}
 	//AXIS
 	else if (shaderType == 3)
@@ -75,4 +88,27 @@ vec4 DoPlaneGrid(in vec2 gridCoords)
 	else result = vec4(0.0);
 
 	return (result);
-};
+}
+
+vec4 DoSketchImage(in vec2 gridCoords, in sampler2D sketchTex)
+{
+	vec4 returnedColor = vec4(0.0, 1.0, 1.0, 1.0);
+
+	if ((gridCoords.x >= 0.005) && (gridCoords.x <= 0.995))
+	{
+		if ((gridCoords.y >= 0.005) && (gridCoords.y <= 0.995))
+		{
+			returnedColor = vec4(0.8, 0.8 ,0.8, 0.5);
+		}
+	}
+	if (texture(sketchTex, gridCoords) != vec4(1.0, 1.0, 1.0, 1.0))
+	{
+		return texture(sketchTex, gridCoords);
+	}
+	else
+	{
+		return returnedColor;
+	}
+	
+}
+

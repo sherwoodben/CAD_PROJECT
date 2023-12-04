@@ -4,7 +4,7 @@
 
 #define MIN_WIDTH 640
 #define MIN_HEIGHT 480
-#define SCENE_TREE_WIDTH 200
+#define SCENE_TREE_WIDTH 256
 
 MessageManager CAD_APP::messageManager = MessageManager();
 
@@ -39,6 +39,9 @@ void CAD_APP::MainLoop()
 
 	//render application:
 	this->Render();
+
+	//do the late update (i.e. deleting objects)
+	this->LateUpdate();
 }
 
 bool CAD_APP::InitializeApp()
@@ -47,8 +50,10 @@ bool CAD_APP::InitializeApp()
 	if (!this->InitializeGlad()) { return false; };
 	if (!this->InitializeDearImGui()) { return false; };
 	
-	if (!this->InitializeShader()) { return false; };
-	this->applicationShader->Use();
+	if (!this->InitializeShaders()) { return false; };
+	
+	//default to the flat shader
+	this->flatShader->Use();
 
 	//load an empty scene to start
 	this->currentScene = this->LoadEmptyScene();
@@ -59,7 +64,10 @@ bool CAD_APP::InitializeApp()
 void CAD_APP::ShutdownApp()
 {
 	//delete the shader program
-	this->applicationShader->deleteProgram();
+	this->flatShader->deleteProgram();
+	this->planeGridShader->deleteProgram();
+	this->inSketchShader->deleteProgram();
+	this->texturedPlaneShader->deleteProgram();
 
 	//clean up Dear ImGui
 	ImGui_ImplOpenGL3_Shutdown();
@@ -68,6 +76,8 @@ void CAD_APP::ShutdownApp()
 
 	//clean up GLFW
 	glfwTerminate();
+
+	delete this->currentScene;
 }
 
 //define callbacks:
@@ -218,17 +228,20 @@ bool CAD_APP::InitializeGlfw()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
 	//for mac:
 	//glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 
 	//create the  window:
-	this->applicationWindow = glfwCreateWindow(640, 480, "Default Window", NULL, NULL);
+	this->applicationWindow = glfwCreateWindow(1280, 720, "Default Window", NULL, NULL);
 	if (!this->applicationWindow)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
 		return false;
 	}
+
+	glfwSetWindowTitle(this->applicationWindow, "CAD++");
 
 	//we made a window, now make that window the current context
 	glfwMakeContextCurrent(this->applicationWindow);
@@ -259,6 +272,8 @@ bool CAD_APP::InitializeDearImGui()
 	ImGui::CreateContext();
 
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.IniFilename = NULL;
+	io.LogFilename = NULL;
 
 	//setup platform/rendererr bindings:
 	if (!ImGui_ImplGlfw_InitForOpenGL(this->applicationWindow, true))
@@ -273,10 +288,28 @@ bool CAD_APP::InitializeDearImGui()
 	return true;
 }
 
-bool CAD_APP::InitializeShader()
+bool CAD_APP::InitializeShaders()
 {
-	this->applicationShader = new Shader("shader.vs", "shader.fs");
-	if (!this->applicationShader)
+	this->flatShader = new Shader("shaders\\shader.vs", "shaders\\flat_shader.fs");
+	if (!this->flatShader)
+	{
+		return false;
+	}
+
+	this->planeGridShader = new Shader("shaders\\shader.vs", "shaders\\plane_shader.fs");
+	if (!this->planeGridShader)
+	{
+		return false;
+	}
+
+	this->inSketchShader = new Shader("shaders\\sketch_from_objects.vs", "shaders\\sketch_from_objects.fs");
+	if (!this->inSketchShader)
+	{
+		return false;
+	}
+
+	this->texturedPlaneShader = new Shader("shaders\\shader.vs", "shaders\\plane_textured.fs");
+	if (!this->texturedPlaneShader)
 	{
 		return false;
 	}
@@ -290,11 +323,16 @@ void CAD_APP::InitializeDirectories()
 	//application) where we store things like default
 	//window size, preferences, etc.
 	//(never actually called for now)
-	std::filesystem::create_directory("/data");
+	//std::filesystem::create_directory("/data");
 }
 
 void CAD_APP::NewImGuiFrame()
 {
+	if (glfwGetWindowAttrib(this->applicationWindow, GLFW_ICONIFIED))
+	{
+		return;
+	}
+
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
@@ -302,6 +340,10 @@ void CAD_APP::NewImGuiFrame()
 
 void CAD_APP::Update()
 {
+	if (glfwGetWindowAttrib(this->applicationWindow, GLFW_ICONIFIED))
+	{
+		return;
+	}
 	//send the latest messages from the manager
 	while (CAD_APP::messageManager.QueueHasMessages())
 	{
@@ -311,8 +353,20 @@ void CAD_APP::Update()
 	this->currentScene->UpdateScene();
 }
 
+void CAD_APP::LateUpdate()
+{
+	this->currentScene->DeleteObjects();
+}
+
 void CAD_APP::Render()
 {
+
+	if (glfwGetWindowAttrib(this->applicationWindow, GLFW_ICONIFIED))
+	{
+		glfwPollEvents();
+		return;
+	}
+
 	//render application
 	this->currentScene->RenderScene();
 	
@@ -337,17 +391,81 @@ void CAD_APP::RenderGUI()
 	{
 		AppGUI::NewPointDialogue(this->currentScene);
 	}
-	if (this->appMenuFlags.newAxisDialogue)
+	else if (this->appMenuFlags.editPointDialogue)
+	{
+		Point* pointToEdit = dynamic_cast<Point*>(this->appMenuFlags.selectedObject1);
+		AppGUI::EditPointDialogue(this->currentScene, pointToEdit);
+	}
+	else if (this->appMenuFlags.newAxisDialogue)
 	{
 		AppGUI::NewAxisDialogue(this->currentScene);
 	}
-	if (this->appMenuFlags.newPlaneDialogue)
+	else if (this->appMenuFlags.editAxisDialogue)
+	{
+		Axis* axisToEdit = dynamic_cast<Axis*>(this->appMenuFlags.selectedObject1);
+		AppGUI::EditAxisDialogue(this->currentScene, axisToEdit);
+	}
+	else if (this->appMenuFlags.newPlaneDialogue)
 	{
 		AppGUI::NewPlaneDialogue(this->currentScene);
 	}
-	if (this->appMenuFlags.newSketchDialogue)
+	else if (this->appMenuFlags.editPlaneDialogue)
+	{
+		Plane* planeToEdit = dynamic_cast<Plane*>(this->appMenuFlags.selectedObject1);
+		AppGUI::EditPlaneDialogue(this->currentScene, planeToEdit);
+	}
+	else if (this->appMenuFlags.newCurveDialogue)
+	{
+		AppGUI::NewCurveDialogue(this->currentScene);
+	}
+	else if (this->appMenuFlags.editCurveDialogue)
+	{
+		Curve3D* curveToEdit = dynamic_cast<Curve3D*>(this->appMenuFlags.selectedObject1);
+		AppGUI::EditCurveDialogue(this->currentScene, curveToEdit);
+	}
+	else if (this->appMenuFlags.newSketchDialogue)
 	{
 		AppGUI::NewSketchDialogue(this->currentScene);
+	}
+	else if (this->appMenuFlags.editSketchDialogue)
+	{
+		Sketch* sketchToEdit = dynamic_cast<Sketch*>(this->appMenuFlags.selectedObject1);
+		AppGUI::EditSketchDialogue(this->currentScene, sketchToEdit);
+	}
+	else if (this->appMenuFlags.newSketchPointDialogue)
+	{
+		AppGUI::NewSketchPointDialogue(this->currentScene,  this->currentSketch);
+	}
+	else if (this->appMenuFlags.editSketchPointDialogue)
+	{
+		SketchPoint* sketchPointToEdit = dynamic_cast<SketchPoint*>(this->appMenuFlags.selectedSketchObject1);
+		AppGUI::EditSketchPointDialogue(this->currentScene, this->currentSketch, sketchPointToEdit);
+	}
+	else if (this->appMenuFlags.newSketchLineDialogue)
+	{
+		AppGUI::NewSketchLineDialogue(this->currentScene, this->currentSketch);
+	}
+	else if (this->appMenuFlags.editSketchLineDialogue)
+	{
+		SketchLine* sketchLineToEdit = dynamic_cast<SketchLine*>(this->appMenuFlags.selectedSketchObject1);
+		AppGUI::EditSketchLineDialogue(this->currentScene, this->currentSketch, sketchLineToEdit);
+	}
+	else if (this->appMenuFlags.newSketchCurveDialogue)
+	{
+		AppGUI::NewSketchPointDialogue(this->currentScene, this->currentSketch);
+	}
+	else if (this->appMenuFlags.editSketchCurveDialogue)
+	{
+		SketchCurve* sketchCurveToEdit = dynamic_cast<SketchCurve*>(this->appMenuFlags.selectedSketchObject1);
+		AppGUI::EditSketchCurveDialogue(this->currentScene, this->currentSketch, sketchCurveToEdit);
+	}
+	else if (this->appMenuFlags.newSurfaceDialogue)
+	{
+		AppGUI::NewSurfaceDialogue(this->currentScene);
+	}
+	else if (this->appMenuFlags.newRuledDialogue)
+	{
+		AppGUI::NewRuledDialogue(this->currentScene);
 	}
 	//render Dear ImGUI GUI
 	//begin a test window -- will eventually become
@@ -379,7 +497,6 @@ bool CAD_APP::LoadSceneFromFile(std::string scenePath)
 CAD_SCENE* CAD_APP::LoadEmptyScene()
 {
 	CAD_SCENE* emptyScene = new CAD_SCENE(this);
-	emptyScene->SetShader(this->applicationShader);
 
 	return emptyScene;
 }

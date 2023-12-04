@@ -22,6 +22,7 @@
 #include "CAD_SCENE.h"
 #include "Shader.h"
 #include "Message.h"
+#include "Sketch.h"
 
 class CAD_APP
 {
@@ -41,6 +42,15 @@ public:
 	//"head" main loop function
 	void MainLoop();
 
+	CAD_SCENE* RestartApp() {
+		if (this->currentScene!= nullptr)
+		{
+			delete this->currentScene;
+		}
+		this->currentScene = new CAD_SCENE(this);
+		return currentScene;
+	}
+
 	//returns if we want to close the window or not
 	bool ShouldClose() { return glfwWindowShouldClose(this->applicationWindow); };
 
@@ -52,13 +62,22 @@ public:
 
 	MenuFlags* GetMenuFlag() { return &this->appMenuFlags; };
 
+	//pointers to the application shaders
+	Shader* flatShader = nullptr;
+	Shader* planeGridShader = nullptr;
+	Shader* texturedPlaneShader = nullptr;
+	Shader* inSketchShader = nullptr;
+
+	Sketch* currentSketch = nullptr;
+
 private:
 	//pointers to the main window and current scene
 	GLFWwindow* applicationWindow = nullptr;
 	CAD_SCENE* currentScene = nullptr;
+	
 
-	//pointer to the application shader
-	Shader* applicationShader = nullptr;
+
+	//static Shader* applicationShaders[];
 
 	//Application GUI flag(s)
 	MenuFlags appMenuFlags;
@@ -67,7 +86,7 @@ private:
 	bool InitializeGlfw();
 	bool InitializeGlad();
 	bool InitializeDearImGui();
-	bool InitializeShader();
+	bool InitializeShaders();
 	void InitializeDirectories();
 
 	//register callback "head" function
@@ -84,6 +103,9 @@ private:
 
 	//update the application
 	void Update();
+
+	//late update for the application
+	void LateUpdate();
 
 	//render the application
 	void Render();

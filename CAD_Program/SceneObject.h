@@ -11,6 +11,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "Shader.h"
+
 struct Color
 {
 	int r;
@@ -26,16 +28,15 @@ enum ShaderType
 	SKETCH,
 	AXIS,
 	POINT,
+	CURVE,
 	FLAT,
 };
-
-class Shader;
 
 class SceneObject
 {
 public:
 	SceneObject() {};
-	~SceneObject() {};
+	virtual ~SceneObject() { };// std::cout << "Destroying base" << std::endl;
 
 	//keeps track of the object's display
 	//name
@@ -57,11 +58,17 @@ public:
 	//keep track of if the object is selected
 	bool isSelected = false;
 
+	//keep track of if we should delete the object or not
+	bool tryDelete = false;
+
+	//keep track of if we CAN delete the object or not
+	bool canDelete() { return (this->numDependents <= 0); };
+
 	//virtual function for rendering a scene
 	//object; each type of object will implement
 	//a different method of rendering
-	void PassShaderData(Shader* shader);
-	virtual void RenderObject() = 0;
+	virtual void PassShaderData(Shader* shader) = 0;
+	virtual void RenderObject(Shader* shader) = 0;
 	void RenderAsTriangles(unsigned int numIndices);
 
 	//virtual function that deletes an object (if
@@ -106,7 +113,14 @@ public:
 	bool GetIsTransparent() { return this->hasTransparency; };
 	void SetIsTransparent(bool newValue) { this->hasTransparency = newValue; };
 
+
+	virtual void Update() = 0;
+	void AddDependent() { this->numDependents++; };
+	void RemoveDependent() { this->numDependents--; };
+
 private:
+	//keep track of how many dependents we have
+	int numDependents = 0;
 	//an ID for this SceneObject's VBO
 	//(vertex buffer object)
 	unsigned int VBO = 0;

@@ -16,18 +16,38 @@ unsigned int Plane::planeIndices[] =
 	3, 0, 2		//second triangle
 };
 
-Plane::Plane(glm::vec3 planeNormal, glm::vec3 planeTangent) : normalVector(glm::normalize(planeNormal))
+Plane::Plane(glm::vec3 planeNormal) : normalVector(glm::normalize(planeNormal))
 {
 	this->InitPlane();
-
-	if (planeTangent != glm::vec3(0.0f, 0.0f, 0.0f))
+	
+	if (this->normalVector == glm::vec3(0.0f, 0.0f, 1.0f))
 	{
-		this->tangentVector = glm::normalize(planeTangent);
+		this->tangentVector = glm::vec3(1.0f, 0.0f, 0.0f);
+	}
+	else if (this->normalVector == glm::vec3(0.0f, 0.0f, -1.0f))
+	{
+		this->tangentVector = glm::vec3(-1.0f, 0.0f, 0.0f);
 	}
 	else
 	{
 		this->tangentVector = -glm::normalize(glm::cross(this->normalVector, { 0.0f, 0.0f, 1.0f }));
 	}
+}
+
+//defined by three points, plane origin at p1.
+//plane right vector points from p1 to p2
+Plane::Plane(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, bool reversed)
+{
+	this->InitPlane();
+
+	this->normalVector = glm::vec3(0.0f, 0.0f, 0.0f);
+	this->tangentVector = glm::vec3(1.0f, 0.0f, 0.0f);
+
+	this->ChangeWithPoints(p1, p2, p3, false);
+
+	
+
+	
 }
 
 Plane::Plane(const char* basisDirection)
@@ -73,9 +93,39 @@ Plane::Plane(const char* basisDirection)
 	
 }
 
-void Plane::RenderObject()
+void Plane::PassShaderData(Shader* shader)
 {
+	glBindVertexArray(*this->GetObjectVAOPointer());
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+
+	shader->Use();
 	
+	//then update the shader
+	shader->setMat4("model", this->GetModelMatrix());
+
+	//set the flat color
+	float r, g, b, a;
+	r = (float)this->GetFlatColor().r;
+	g = (float)this->GetFlatColor().g;
+	b = (float)this->GetFlatColor().b;
+	a = (float)this->GetFlatColor().a;
+	//scale them to be between 0 and 1 (divide by 255)
+	r /= 255.0f;
+	g /= 255.0f;
+	b /= 255.0f;
+	a /= 255.0f;
+	//now, make  the color a vec4
+	glm::vec4 flatColor = glm::vec4(r, g, b, 1.0f);
+	//update the flat color uniform and alpha uniform
+	shader->setVec4("flatColor", flatColor);
+	shader->setFloat("alpha", a);
+	//std::cout << glGetError() << std::endl;
+}
+
+void Plane::RenderObject(Shader* shader)
+{
+	this->PassShaderData(shader);
 	//we have 6 indices making up the triangles
 	this->RenderAsTriangles(6);
 }
@@ -85,7 +135,8 @@ glm::mat4 Plane::GetModelMatrix()
 	glm::mat4 modelMatrix = glm::mat4(1.0f);
 
 	////first, scale the matrix
-	glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{this->GetObjectScale()});
+	glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{ 50.0f, 50.0f, 50.0f });
+	//scaleMatrix = glm::scale(scaleMatrix, glm::vec3{ WORLD_SCALAR, WORLD_SCALAR, WORLD_SCALAR });
 
 	glm::vec3 surfNormal = glm::normalize(this->normalVector);
 	glm::vec3 surfTangent = glm::normalize(this->tangentVector);
@@ -112,12 +163,27 @@ void Plane::DeleteObject()
 	this->DeleteBuffers();
 }
 
+void Plane::ChangeWithPoints(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, bool reversed)
+{
+	this->tangentVector = glm::normalize(p2 - p1);
+
+	glm::vec3 OP3 = glm::normalize(p3 - p1);
+
+	this->normalVector = glm::normalize(glm::cross(this->tangentVector, OP3));
+
+	if (reversed)
+	{
+		this->normalVector *= -1.0f;
+	}
+
+	this->SetObjectPosition(p1);
+
+}
+
 void Plane::InitPlane()
 {
 	//first of all, this is a datum object
 	this->isDatumObject = true;
-
-	this->tangentVector = glm::cross(this->normalVector, { 0.0f, 0.0f, 1.0f });
 
 	//update the object type
 	this->objectType = "Plane";

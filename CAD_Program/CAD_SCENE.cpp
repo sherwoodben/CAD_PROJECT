@@ -83,6 +83,68 @@ void CAD_SCENE::AddSceneObject(SceneObject* objectToAdd)
 	
 }
 
+void CAD_SCENE::DeleteObjects()
+{
+
+	for (SceneObject* sO : this->sceneObjects)
+	{
+		if (sO->canDelete() && sO->tryDelete)
+		{
+			if (dynamic_cast<Sketch*>(sO) != nullptr)
+			{
+				Sketch* sketchToRemove = (Sketch*)sO;
+				delete sketchToRemove;
+			}
+			else if (dynamic_cast<Curve3D*>(sO) != nullptr)
+			{
+				Curve3D* curveToRemove = (Curve3D*)sO;
+				delete curveToRemove;
+			}
+			else if (dynamic_cast<Surface*>(sO) != nullptr)
+			{
+				Surface* surfaceToRemove = (Surface*)sO;
+				delete surfaceToRemove;
+			}
+		}
+		else
+		{
+			sO->tryDelete = false;
+		}
+	}
+
+	for (SceneObject* sO : this->datumObjects)
+	{
+		if (sO->canDelete() && sO->tryDelete)
+		{
+			if (dynamic_cast<Point*>(sO) != nullptr)
+			{
+				Point* pointToRemove = (Point*)sO;
+				delete pointToRemove;
+			}
+			else if (dynamic_cast<Axis*>(sO) != nullptr)
+			{
+				Axis* axisToRemove = (Axis*)sO;
+				delete axisToRemove;
+			}
+			else if (dynamic_cast<Plane*>(sO) != nullptr)
+			{
+				Plane* planeToRemove = (Plane*)sO;
+				delete planeToRemove;
+			}
+		}
+		else
+		{
+			sO->tryDelete = false;
+		}
+	}
+
+	std::erase_if(this->sceneObjects, [](SceneObject* x) {return (x->canDelete() && x->tryDelete); });
+	
+
+	std::erase_if(this->datumObjects, [](SceneObject* x) {return (x->canDelete() && x->tryDelete); });
+
+}
+
 void CAD_SCENE::DoArcBallCam()
 {
 	double dAngleX = (2.0f * glm::pi<double>()) / (double)this->sceneState.ScreenDimensions[0];
@@ -99,7 +161,7 @@ void CAD_SCENE::DoTranslateCam()
 	double dDeltaX = 1.0f / (double)this->sceneState.ScreenDimensions[0];
 	double dDeltaY = 1.0f / (double)this->sceneState.ScreenDimensions[1];
 
-	double deltaX = this->sceneState.ArcDragVector[0] * dDeltaX;
+	double deltaX =  this->sceneState.ArcDragVector[0] * dDeltaX;
 	double deltaY = -this->sceneState.ArcDragVector[1] * dDeltaY;
 
 	this->sceneState.SceneCamera.TranslateCam(deltaX, deltaY);
@@ -123,7 +185,7 @@ void CAD_SCENE::CloseScene()
 
 void CAD_SCENE::ProcessMessage(Message msg)
 {
-	std::cout << msg.messageType << " " << msg.messageData << std::endl;
+	//std::cout << msg.messageType << " " << msg.messageData << std::endl;
 	
 	if (msg.messageType == "DELETE")
 	{
@@ -137,7 +199,7 @@ void CAD_SCENE::ProcessMessage(Message msg)
 	}
 
 	//Middle mouse toggles the arc ball for manipulating the view
-	if (msg.messageType == "M_MOUSE")
+	if (msg.messageType == "M_MOUSE" || (this->sceneState.AltModifier && msg.messageType == "R_MOUSE"))
 	{
 		this->sceneState.ArcBallMode = (msg.messageData == "PRESSED");
 
@@ -166,7 +228,7 @@ void CAD_SCENE::ProcessMessage(Message msg)
 		this->sceneState.AltModifier = (msg.messageData == "PRESSED");
 	}
 
-	if (msg.messageType == "NUM_1" && msg.messageData == "PRESSED")
+	/*if (msg.messageType == "NUM_1" && msg.messageData == "PRESSED")
 	{
 		if (!this->sceneState.ShiftModifier)
 		{
@@ -202,48 +264,65 @@ void CAD_SCENE::ProcessMessage(Message msg)
 	if (msg.messageType == "NUM_4" && msg.messageData == "PRESSED")
 	{
 		this->SetCameraView(CameraState::DefinedView::ISOMETRIC);
-	}
+	}*/
 	
 }
 
 void CAD_SCENE::HandleDeleteObjectMessage(std::string objToDelete)
 {
+	for (SceneObject* sO : this->sceneObjects)
+	{
+		if (sO->displayName == objToDelete)
+		{
+			sO->tryDelete = true;
+			return;
+		}
+	}
+
+	for (SceneObject* sO : this->datumObjects)
+	{
+		if (sO->displayName == objToDelete)
+		{
+			sO->tryDelete = true;
+			return;
+		}
+	}
 }
 
 void CAD_SCENE::HandleNewObjectMessage(std::string typeToAdd)
 {
 	if (typeToAdd == "POINT")
 	{
-		std::cout << "Adding Point." << std::endl;
+		//std::cout << "Adding Point." << std::endl;
 		return;
 	}
 	if (typeToAdd == "AXIS")
 	{
-		std::cout << "Add AXIS Implementation Missing." << std::endl;
+		//std::cout << "Add AXIS Implementation Missing." << std::endl;
 		return;
 	}
 	if (typeToAdd == "PLANE")
 	{
-		std::cout << "Add PLANE Implementation Missing." << std::endl;
+		//std::cout << "Add PLANE Implementation Missing." << std::endl;
 		return;
 	}
 	if (typeToAdd == "SKETCH")
 	{
-		std::cout << "Add SKETCH Implementation Missing." << std::endl;
+		//std::cout << "Add SKETCH Implementation Missing." << std::endl;
 		return;
 	}
 	if (typeToAdd == "SURFACE")
 	{
-		std::cout << "Add SURFACE Implementation Missing." << std::endl;
+		//std::cout << "Add SURFACE Implementation Missing." << std::endl;
 		return;
 	}
 	if (typeToAdd == "SOLID")
 	{
-		std::cout << "Add SOLID Implementation Missing." << std::endl;
+		//std::cout << "Add SOLID Implementation Missing." << std::endl;
 		return;
 	}
 
-	std::cout << "UNKNOWN TYPE REQUESTED FOR NEW OBJECT" << std::endl;
+	//std::cout << "UNKNOWN TYPE REQUESTED FOR NEW OBJECT" << std::endl;
 }
 
 void CAD_SCENE::UpdateMousePosition()
@@ -267,7 +346,26 @@ void CAD_SCENE::UpdateMousePosition()
 void CAD_SCENE::UpdateScreenProperties()
 {
 	glfwGetWindowSize(glfwGetCurrentContext(), &this->sceneState.ScreenDimensions[0], &this->sceneState.ScreenDimensions[1]);
-	this->sceneState.ScreenAspectRatio = ((float)this->sceneState.ScreenDimensions[0] / (float)this->sceneState.ScreenDimensions[1]);
+	this->sceneState.ScreenAspectRatio = ((float)(this->sceneState.ScreenDimensions[0] - 256) / (float)this->sceneState.ScreenDimensions[1]);
+}
+
+void CAD_SCENE::UpdateDependents()
+{
+	for (SceneObject* sO : this->sceneObjects )
+	{
+		if (!sO->canDelete())
+		{
+			sO->Update();
+		}
+	}
+
+	for (SceneObject* sO : this->datumObjects)
+	{
+		if (!sO->canDelete())
+		{
+			sO->Update();
+		}
+	}
 }
 
 void CAD_SCENE::UpdateScene()
@@ -295,11 +393,23 @@ void CAD_SCENE::UpdateScene()
 			this->DoTranslateCam();
 		}
 	}
+
+	if (!this->UpToDate)
+	{
+		for (SceneObject* sO : this->sceneObjects)
+		{
+			sO->Update();
+		}
+		for (SceneObject* sO : this->datumObjects)
+		{
+			sO->Update();
+		}
+	}
 }
 
 void CAD_SCENE::RenderScene()
 {
-	//glViewport(0, 0, sceneState.ScreenDimensions[0], sceneState.ScreenDimensions[1]);
+	glViewport(256, 0, sceneState.ScreenDimensions[0] - 256, sceneState.ScreenDimensions[1]);
 	//enable openGL depth test
 	glEnable(GL_DEPTH_TEST);
 
@@ -321,9 +431,18 @@ void CAD_SCENE::RenderScene()
 	//and get the view matrix
 	glm::mat4 viewMatrix = this->sceneState.SceneCamera.GetViewMatrix();
 
-	//update the uniforms for the shader with the camera matrices
-	this->GetShader()->setMat4("projection", projectionMatrix);
-	this->GetShader()->setMat4("view", viewMatrix);
+	//update the uniforms for the shaders with the camera matrices
+	this->parentApplication->flatShader->Use();
+	this->parentApplication->flatShader->setMat4("projection", projectionMatrix);
+	this->parentApplication->flatShader->setMat4("view", viewMatrix);
+
+	this->parentApplication->planeGridShader->Use();
+	this->parentApplication->planeGridShader->setMat4("projection", projectionMatrix);
+	this->parentApplication->planeGridShader->setMat4("view", viewMatrix);
+
+	this->parentApplication->texturedPlaneShader->Use();
+	this->parentApplication->texturedPlaneShader->setMat4("projection", projectionMatrix);
+	this->parentApplication->texturedPlaneShader->setMat4("view", viewMatrix);
 
 	std::vector<SceneObject*> objectsWithTransparency;
 
@@ -347,11 +466,22 @@ void CAD_SCENE::RenderScene()
 				continue;
 			}
 
-			sO->PassShaderData(this->sceneShader);
+			//pass different shader to render function depending on object type
+			if (sO->objectType == "Point" || sO->objectType == "Axis" || sO->objectType == "Curve" || sO->objectType == "Surface")
+			{
+				sO->RenderObject(this->parentApplication->flatShader);
+			}
+			else if (sO->objectType == "Plane")
+			{
+				sO->RenderObject(this->parentApplication->planeGridShader);
+			}
+			else if (sO->objectType == "Sketch")
+			{
+				Sketch* sketch = (Sketch*)sO;
 
-			sO->RenderObject();
-
-			//std::cout << glGetError() << std::endl;
+				sketch->RenderSketchObjects(this->parentApplication->inSketchShader);
+				sketch->RenderObject(this->parentApplication->texturedPlaneShader);
+			}
 
 		}
 	}
@@ -370,11 +500,22 @@ void CAD_SCENE::RenderScene()
 			continue;
 		}
 
-		sO->PassShaderData(this->sceneShader);
+		//pass different shader to render function depending on object type
+		if (sO->objectType == "Point" || sO->objectType == "Axis" || sO->objectType == "Curve" || sO->objectType == "Surface")
+		{
+			sO->RenderObject(this->parentApplication->flatShader);
+		}
+		else if (sO->objectType == "Plane")
+		{
+			sO->RenderObject(this->parentApplication->planeGridShader);
+		}
+		else if (sO->objectType == "Sketch")
+		{
+			Sketch* sketch = (Sketch*)sO;
 
-		sO->RenderObject();
-
-		//std::cout << glGetError() << std::endl;
+			sketch->RenderSketchObjects(this->parentApplication->inSketchShader);
+			sketch->RenderObject(this->parentApplication->texturedPlaneShader);
+		}
 	}
 
 	//done with transparencies; turn on depth mask again

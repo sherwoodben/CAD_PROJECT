@@ -40,6 +40,18 @@
     <Filter Include="Header Files\Objects\Sketch Objects">
       <UniqueIdentifier>{b2777fb2-8be5-4d1c-a440-14c1b2496a2a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Shaders\Vertex Shaders">
+      <UniqueIdentifier>{432c649a-ccc8-43bb-9c30-6a18eae1f410}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders\Fragment Shaders">
+      <UniqueIdentifier>{976ed894-f215-40f2-ad19-0414070d2b6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Objects\App">
+      <UniqueIdentifier>{c6b5293e-9830-4300-a520-05c599c87b80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Objects\App">
+      <UniqueIdentifier>{83e4235d-06d0-46f2-863b-63c5b6b3eb3b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -69,17 +81,8 @@
     <ClCompile Include="..\imgui\imgui_widgets.cpp">
       <Filter>Source Files\ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="CAD_APP.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CAD_SCENE.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Shader.cpp">
       <Filter>Resource Files\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="Camera.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SceneObject.cpp">
       <Filter>Source Files\Objects\Scene Objects</Filter>
@@ -90,14 +93,32 @@
     <ClCompile Include="Axis.cpp">
       <Filter>Source Files\Objects\Scene Objects</Filter>
     </ClCompile>
+    <ClCompile Include="Sketch.cpp">
+      <Filter>Source Files\Objects\Scene Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="SketchObjects.cpp">
+      <Filter>Source Files\Objects\Sketch Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="CurveFunctions.cpp">
+      <Filter>Source Files\Objects\Scene Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Surface.cpp">
+      <Filter>Source Files\Objects\Scene Objects</Filter>
+    </ClCompile>
     <ClCompile Include="AppGUI.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Objects\App</Filter>
+    </ClCompile>
+    <ClCompile Include="CAD_APP.cpp">
+      <Filter>Source Files\Objects\App</Filter>
+    </ClCompile>
+    <ClCompile Include="CAD_SCENE.cpp">
+      <Filter>Source Files\Objects\App</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source Files\Objects\App</Filter>
     </ClCompile>
     <ClCompile Include="Point.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Sketch.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Objects\Scene Objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -131,17 +152,8 @@
     <ClInclude Include="..\imgui\imgui_impl_opengl3_loader.h">
       <Filter>Header Files\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="CAD_APP.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CAD_SCENE.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Shader.h">
       <Filter>Resource Files\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="Camera.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SceneObject.h">
       <Filter>Header Files\Objects\Scene Objects</Filter>
@@ -149,28 +161,64 @@
     <ClInclude Include="Plane.h">
       <Filter>Header Files\Objects\Scene Objects</Filter>
     </ClInclude>
-    <ClInclude Include="Message.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Axis.h">
       <Filter>Header Files\Objects\Scene Objects</Filter>
     </ClInclude>
-    <ClInclude Include="AppGUI.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Point.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Objects\Scene Objects</Filter>
     </ClInclude>
     <ClInclude Include="Sketch.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Objects\Scene Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="SketchObjects.h">
+      <Filter>Header Files\Objects\Sketch Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="3DCurves.h">
+      <Filter>Header Files\Objects\Scene Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="CurveFunctions.h">
+      <Filter>Header Files\Objects\Scene Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Surface.h">
+      <Filter>Header Files\Objects\Scene Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="AppGUI.h">
+      <Filter>Header Files\Objects\App</Filter>
+    </ClInclude>
+    <ClInclude Include="CAD_APP.h">
+      <Filter>Header Files\Objects\App</Filter>
+    </ClInclude>
+    <ClInclude Include="CAD_SCENE.h">
+      <Filter>Header Files\Objects\App</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Header Files\Objects\App</Filter>
+    </ClInclude>
+    <ClInclude Include="Message.h">
+      <Filter>Header Files\Objects\App</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader.vs">
-      <Filter>Resource Files\Shaders</Filter>
+      <Filter>Resource Files\Shaders\Vertex Shaders</Filter>
     </None>
     <None Include="shader.fs">
-      <Filter>Resource Files\Shaders</Filter>
+      <Filter>Resource Files\Shaders\Fragment Shaders</Filter>
+    </None>
+    <None Include="sketch_from_objects.fs">
+      <Filter>Resource Files\Shaders\Fragment Shaders</Filter>
+    </None>
+    <None Include="plane_shader.fs">
+      <Filter>Resource Files\Shaders\Fragment Shaders</Filter>
+    </None>
+    <None Include="flat_shader.fs">
+      <Filter>Resource Files\Shaders\Fragment Shaders</Filter>
+    </None>
+    <None Include="plane_textured.fs">
+      <Filter>Resource Files\Shaders\Fragment Shaders</Filter>
+    </None>
+    <None Include="sketch_from_objects.vs">
+      <Filter>Resource Files\Shaders\Vertex Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

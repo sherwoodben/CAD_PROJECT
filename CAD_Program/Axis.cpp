@@ -38,23 +38,14 @@ unsigned int Axis::axisIndices[] =
 Axis::Axis(glm::vec3 axisVector, glm::vec3 axisPoint)
 {
     this->InitAxis();
-    this->axisDirection = axisVector;
-    this->SetObjectPosition(axisPoint);
+    glm::vec3 p2 = axisPoint + axisDirection;
+    this->ChangeWithPoints(axisPoint, p2, false);
 }
 
 Axis::Axis(glm::vec3 point1, glm::vec3 point2, bool reverse)
 {
     this->InitAxis();
-    if (!reverse)
-    {
-        this->axisDirection = glm::normalize(glm::vec3(point2 - point1));
-        this->SetObjectPosition(point1);
-    }
-    else
-    {
-        this->axisDirection = glm::normalize(glm::vec3(point2 - point1));
-        this->SetObjectPosition(point2);
-    }
+    this->ChangeWithPoints(point1, point2, reverse);
 }
 
 Axis::Axis(const char* basisDirection)
@@ -94,10 +85,51 @@ Axis::Axis(const char* basisDirection)
     }
 }
 
-void Axis::RenderObject()
+void Axis::PassShaderData(Shader* shader)
 {
+    shader->Use();
+    //then update the shader
+    shader->setMat4("model", this->GetModelMatrix());
+
+    //update the flat color and alpha
+    float r, g, b, a;
+    r = (float)this->GetFlatColor().r;
+    g = (float)this->GetFlatColor().g;
+    b = (float)this->GetFlatColor().b;
+    a = (float)this->GetFlatColor().a;
+    //scale them to be between 0 and 1 (divide by 255)
+    r /= 255.0f;
+    g /= 255.0f;
+    b /= 255.0f;
+    a /= 255.0f;
+    //now, make  the color a vec4
+    glm::vec4 flatColor = glm::vec4(r, g, b, 1.0f);
+    //update the flat color uniform and alpha uniform
+    shader->setVec4("flatColor", flatColor);
+    shader->setFloat("alpha", a);
+
+    //std::cout << glGetError() << std::endl;
+}
+
+void Axis::RenderObject(Shader* shader)
+{
+    this->PassShaderData(shader);
     //we have 36 indices (remove hard coded value at some point)
     this->RenderAsTriangles(NUM_AXIS_INDICES);
+}
+
+void Axis::ChangeWithPoints(glm::vec3 p1, glm::vec3 p2, bool reversed)
+{
+    if (!reversed)
+    {
+        this->axisDirection = glm::normalize(glm::vec3(p2 - p1));
+        this->SetObjectPosition(p1);
+    }
+    else
+    {
+        this->axisDirection = glm::normalize(glm::vec3(p1 - p2));
+        this->SetObjectPosition(p2);
+    }
 }
 
 glm::mat4 Axis::GetModelMatrix()
@@ -106,8 +138,8 @@ glm::mat4 Axis::GetModelMatrix()
 
     //first scale the matrix-- make it looooooong
     //and skinny (like a line)
-    glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{ 1.0f, this->axisThickness, this->axisThickness });
-
+    glm::mat4 scaleMatrix = glm::scale(modelMatrix, glm::vec3{ 50.0f, 0.2f, .2f });
+    //scaleMatrix = glm::scale(scaleMatrix, glm::vec3{ WORLD_SCALAR, WORLD_SCALAR, WORLD_SCALAR });
     glm::mat4 rotationMatrix = glm::mat4(1.0f);
     //yaw
     float yaw = glm::atan(this->axisDirection.y, this->axisDirection.x);

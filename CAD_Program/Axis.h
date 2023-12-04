@@ -14,7 +14,11 @@ public:
 	~Axis() {};
 
 	//Implement specific render for axes (if any)
-	void RenderObject();
+	void PassShaderData(Shader* shader);
+	void RenderObject(Shader* shader);
+	void ChangeWithPoints(glm::vec3 p1, glm::vec3 p2, bool reversed);
+
+	void Update() {};
 
 	//gets the model matrix of the object
 	glm::mat4 GetModelMatrix();
@@ -22,6 +26,8 @@ public:
 	//deletes the object
 	void DeleteObject();
 
+	void SetAxisDirection(glm::vec3 dir) { this->axisDirection = glm::normalize(dir); };
+	glm::vec3 GetAxisDirection() { return this->axisDirection; };
 private:
 	//axis "thickness" value
 	double axisThickness = 0.005f;

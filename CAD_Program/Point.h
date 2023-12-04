@@ -7,11 +7,14 @@ public:
 
 	~Point() {};
 
-	void RenderObject();
+	void PassShaderData(Shader* shader);
+	void RenderObject(Shader* shader);
 
 	glm::mat4 GetModelMatrix();
 
 	void DeleteObject();
+
+	void Update() {};
 
 private:
 	double pointSize = 0.01f;

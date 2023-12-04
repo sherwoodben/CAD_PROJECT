@@ -10,19 +10,29 @@ class Plane : public SceneObject
 public:
 	//will pass an array of floats representing
 	//the normal vector components
-	Plane(glm::vec3 planeNormal, glm::vec3 planeTangent = {0.0f, 0.0f, 0.0f});
+	Plane(glm::vec3 planeNormal);
+	Plane(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, bool reversed = false);
 
 	//default planes defined by two character
 	//representing the normal direction
 	Plane(const char* basisDirection);
 	~Plane() {};
 
-	void RenderObject();
+	void PassShaderData(Shader* shader);
+	void RenderObject(Shader* shader);
 
 	//gets the model matrix of the object
 	glm::mat4 GetModelMatrix();
 
+	void Update() {};
+
 	void DeleteObject();
+
+	glm::vec3 GetNormalVector() { return this->normalVector; };
+	glm::vec3 GetPlaneRightVector() { return this->tangentVector; };
+	glm::vec3 GetPlaneUpVector() { return glm::cross(this->normalVector, this->tangentVector); };
+
+	void ChangeWithPoints(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, bool reversed);
 
 	//vertices that defines the plane
 	static float planeVertices[];
@@ -42,8 +52,6 @@ private:
 	//plane tangent vector (defines the X-axis
 	//within the plane)
 	glm::vec3 tangentVector;
-
-	
 
 	void InitPlane();
 
