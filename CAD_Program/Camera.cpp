@@ -61,36 +61,46 @@ void Camera::GoToDefinedView(CameraState::DefinedView desiredView, CameraState s
 	switch (desiredView)
 	{
 	case CameraState::DefinedView::FRONT:
-		desiredCameraState.cameraPosition = {0.0f, -1.0f, 0.0f};
+		desiredCameraState.cameraPosition = {0.0f, -15.0f, 0.0f};
 		desiredCameraState.cameraRight = { 1.0f, 0.0f, 0.0f };
 		break;
 	case CameraState::DefinedView::RIGHT:
-		desiredCameraState.cameraPosition = { 1.0f, 0.0f, 0.0f };
+		desiredCameraState.cameraPosition = { 15.0f, 0.0f, 0.0f };
 		desiredCameraState.cameraRight = { 0.0f, 1.0f, 0.0f };
 		break;
 	case CameraState::DefinedView::TOP:
-		desiredCameraState.cameraPosition = { 0.0f, 0.0f, 1.0f };
+		desiredCameraState.cameraPosition = { 0.0f, 0.0f, 15.0f };
 		desiredCameraState.cameraRight = { 1.0f, 0.0f, 0.0f };
+		desiredCameraState.cameraUp = { 0.0f, 1.0f, 0.0f };
 		break;
 	case CameraState::DefinedView::ISOMETRIC:
-		desiredCameraState.cameraPosition = { 1.0f, 1.0f, 1.0f };
+		desiredCameraState.cameraPosition = { 15.0f, 15.0f, 15.0f };
 		desiredCameraState.cameraRight = { -1.0f, 1.0f, 0.0f };
 		//desiredCameraState.cameraUp = { -1.0f, -1.0f, 1.0f };
 		break;
 	case CameraState::DefinedView::BACK:
-		desiredCameraState.cameraPosition = { 0.0f, 1.0f, 0.0f };
-		desiredCameraState.cameraRight = { -1.0f, 0.0f, 0.0f };
+		desiredCameraState.cameraPosition = { 0.0f, 15.0f, 0.0f };
+		desiredCameraState.cameraRight = { -15.0f, 0.0f, 0.0f };
 		break;
 	case CameraState::DefinedView::LEFT:
-		desiredCameraState.cameraPosition = { -1.0f, 0.0f, 0.0f };
-		desiredCameraState.cameraRight = { 0.0f, -1.0f, 0.0f };
+		desiredCameraState.cameraPosition = { -15.0f, 0.0f, 0.0f };
+		desiredCameraState.cameraRight = { 0.0f, -15.0f, 0.0f };
 		break;
 	case CameraState::DefinedView::BOTTOM:
-		desiredCameraState.cameraPosition = { 0.0f, 0.0f, -1.0f };
-		desiredCameraState.cameraRight = { 1.0f, 0.0f, 0.0f };
+		desiredCameraState.cameraPosition = { 0.0f, 0.0f, -15.0f };
+		desiredCameraState.cameraRight = { 15.0f, 0.0f, 0.0f };
+		desiredCameraState.cameraUp = { 0.0f, -15.0f, 0.0f };
 		break;
 	case CameraState::DefinedView::SAVED:
 		desiredCameraState = savedCamera;
+		break;
+	case CameraState::DefinedView::RESET:
+		desiredCameraState.cameraIsOrthographic = currentOrtho;
+		desiredCameraState.cameraPosition = { 0.0f, -15.0f, 0.0f };
+		desiredCameraState.cameraRight = { 1.0f, 0.0f, 0.0f };
+		desiredCameraState.cameraTarget = { 0.0f, 0.0f, 0.0f };
+		this->cameraState = desiredCameraState;
+		return;
 		break;
 	default:
 		desiredCameraState = CameraState();
@@ -151,6 +161,10 @@ void Camera::UpdatePosition()
 	{
 		newCameraPos = { newCameraPos.x * this->cameraState.cameraZoom, newCameraPos.y * this->cameraState.cameraZoom, newCameraPos.z * this->cameraState.cameraZoom };
 	}
+	else
+	{
+		newCameraPos = 100.0f * newCameraPos;
+	}
 	newCameraPos += this->cameraState.cameraTarget;
 	this->cameraState.cameraPosition = newCameraPos;
 }
@@ -186,7 +200,7 @@ void Camera::ArcBall(double angleX, double angleY)
 	glm::mat4x4 rotationMatrix(1.0f);
 
 	glm::vec3 crossProd = glm::cross(glm::vec3(glm::normalize(glm::vec3(camOffsetFromTarget.x, camOffsetFromTarget.y, 0.0f))), this->cameraState.cameraRight);
-	if (crossProd == glm::vec3(0.0f))
+	if (crossProd == glm::vec3(0.0f) || isnan(crossProd.x))
 	{
 		crossProd = glm::vec3(0.0f, 0.0f, 1.0f);
 	}

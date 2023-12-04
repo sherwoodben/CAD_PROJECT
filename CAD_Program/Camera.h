@@ -30,7 +30,7 @@ struct CameraState
 	glm::vec3 cameraPosition = { 0.0f, 0.0f, 0.0f };
 
 	float cameraFOV = 45.0f;
-	float cameraZoom = 10.0f;
+	float cameraZoom = 50.0f;
 
 	float cameraClippingPlanes[2] = { 0.0005f, 500.0f };
 };
@@ -43,7 +43,7 @@ class Camera
 public:
 
 	//constructor;
-	Camera() {};
+	Camera() { this->GoToDefinedView(CameraState::ISOMETRIC); };
 
 	//set a new target for the camera
 	void SetTarget(glm::vec3 newTarget) { this->cameraState.cameraTarget = newTarget; };

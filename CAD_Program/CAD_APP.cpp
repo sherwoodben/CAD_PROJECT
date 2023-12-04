@@ -4,7 +4,7 @@
 
 #define MIN_WIDTH 640
 #define MIN_HEIGHT 480
-#define SCENE_TREE_WIDTH 200
+#define SCENE_TREE_WIDTH 256
 
 MessageManager CAD_APP::messageManager = MessageManager();
 
@@ -76,6 +76,8 @@ void CAD_APP::ShutdownApp()
 
 	//clean up GLFW
 	glfwTerminate();
+
+	delete this->currentScene;
 }
 
 //define callbacks:
@@ -232,12 +234,14 @@ bool CAD_APP::InitializeGlfw()
 
 
 	//create the  window:
-	this->applicationWindow = glfwCreateWindow(640, 480, "Default Window", NULL, NULL);
+	this->applicationWindow = glfwCreateWindow(1280, 720, "Default Window", NULL, NULL);
 	if (!this->applicationWindow)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
 		return false;
 	}
+
+	glfwSetWindowTitle(this->applicationWindow, "CAD++");
 
 	//we made a window, now make that window the current context
 	glfwMakeContextCurrent(this->applicationWindow);
@@ -268,6 +272,8 @@ bool CAD_APP::InitializeDearImGui()
 	ImGui::CreateContext();
 
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.IniFilename = NULL;
+	io.LogFilename = NULL;
 
 	//setup platform/rendererr bindings:
 	if (!ImGui_ImplGlfw_InitForOpenGL(this->applicationWindow, true))
@@ -284,25 +290,25 @@ bool CAD_APP::InitializeDearImGui()
 
 bool CAD_APP::InitializeShaders()
 {
-	this->flatShader = new Shader("shader.vs", "flat_shader.fs");
+	this->flatShader = new Shader("shaders\\shader.vs", "shaders\\flat_shader.fs");
 	if (!this->flatShader)
 	{
 		return false;
 	}
 
-	this->planeGridShader = new Shader("shader.vs", "plane_shader.fs");
+	this->planeGridShader = new Shader("shaders\\shader.vs", "shaders\\plane_shader.fs");
 	if (!this->planeGridShader)
 	{
 		return false;
 	}
 
-	this->inSketchShader = new Shader("sketch_from_objects.vs", "sketch_from_objects.fs");
+	this->inSketchShader = new Shader("shaders\\sketch_from_objects.vs", "shaders\\sketch_from_objects.fs");
 	if (!this->inSketchShader)
 	{
 		return false;
 	}
 
-	this->texturedPlaneShader = new Shader("shader.vs", "plane_textured.fs");
+	this->texturedPlaneShader = new Shader("shaders\\shader.vs", "shaders\\plane_textured.fs");
 	if (!this->texturedPlaneShader)
 	{
 		return false;
@@ -317,7 +323,7 @@ void CAD_APP::InitializeDirectories()
 	//application) where we store things like default
 	//window size, preferences, etc.
 	//(never actually called for now)
-	std::filesystem::create_directory("/data");
+	//std::filesystem::create_directory("/data");
 }
 
 void CAD_APP::NewImGuiFrame()
@@ -385,26 +391,82 @@ void CAD_APP::RenderGUI()
 	{
 		AppGUI::NewPointDialogue(this->currentScene);
 	}
-	if (this->appMenuFlags.editPointDialogue)
+	else if (this->appMenuFlags.editPointDialogue)
 	{
-		AppGUI::EditPointDialogue(this->currentScene, (Point*)this->appMenuFlags.selectedObject1);
+		Point* pointToEdit = dynamic_cast<Point*>(this->appMenuFlags.selectedObject1);
+		AppGUI::EditPointDialogue(this->currentScene, pointToEdit);
 	}
-	if (this->appMenuFlags.newAxisDialogue)
+	else if (this->appMenuFlags.newAxisDialogue)
 	{
 		AppGUI::NewAxisDialogue(this->currentScene);
 	}
-	if (this->appMenuFlags.newPlaneDialogue)
+	else if (this->appMenuFlags.editAxisDialogue)
+	{
+		Axis* axisToEdit = dynamic_cast<Axis*>(this->appMenuFlags.selectedObject1);
+		AppGUI::EditAxisDialogue(this->currentScene, axisToEdit);
+	}
+	else if (this->appMenuFlags.newPlaneDialogue)
 	{
 		AppGUI::NewPlaneDialogue(this->currentScene);
 	}
-	if (this->appMenuFlags.newSketchDialogue)
+	else if (this->appMenuFlags.editPlaneDialogue)
+	{
+		Plane* planeToEdit = dynamic_cast<Plane*>(this->appMenuFlags.selectedObject1);
+		AppGUI::EditPlaneDialogue(this->currentScene, planeToEdit);
+	}
+	else if (this->appMenuFlags.newCurveDialogue)
+	{
+		AppGUI::NewCurveDialogue(this->currentScene);
+	}
+	else if (this->appMenuFlags.editCurveDialogue)
+	{
+		Curve3D* curveToEdit = dynamic_cast<Curve3D*>(this->appMenuFlags.selectedObject1);
+		AppGUI::EditCurveDialogue(this->currentScene, curveToEdit);
+	}
+	else if (this->appMenuFlags.newSketchDialogue)
 	{
 		AppGUI::NewSketchDialogue(this->currentScene);
 	}
-	/*if (this->appMenuFlags.editSketchMenu)
+	else if (this->appMenuFlags.editSketchDialogue)
 	{
-		AppGUI::EditSketchMenu(this->currentScene, this->appMenuFlags.selectedObject1);
-	}*/
+		Sketch* sketchToEdit = dynamic_cast<Sketch*>(this->appMenuFlags.selectedObject1);
+		AppGUI::EditSketchDialogue(this->currentScene, sketchToEdit);
+	}
+	else if (this->appMenuFlags.newSketchPointDialogue)
+	{
+		AppGUI::NewSketchPointDialogue(this->currentScene,  this->currentSketch);
+	}
+	else if (this->appMenuFlags.editSketchPointDialogue)
+	{
+		SketchPoint* sketchPointToEdit = dynamic_cast<SketchPoint*>(this->appMenuFlags.selectedSketchObject1);
+		AppGUI::EditSketchPointDialogue(this->currentScene, this->currentSketch, sketchPointToEdit);
+	}
+	else if (this->appMenuFlags.newSketchLineDialogue)
+	{
+		AppGUI::NewSketchLineDialogue(this->currentScene, this->currentSketch);
+	}
+	else if (this->appMenuFlags.editSketchLineDialogue)
+	{
+		SketchLine* sketchLineToEdit = dynamic_cast<SketchLine*>(this->appMenuFlags.selectedSketchObject1);
+		AppGUI::EditSketchLineDialogue(this->currentScene, this->currentSketch, sketchLineToEdit);
+	}
+	else if (this->appMenuFlags.newSketchCurveDialogue)
+	{
+		AppGUI::NewSketchPointDialogue(this->currentScene, this->currentSketch);
+	}
+	else if (this->appMenuFlags.editSketchCurveDialogue)
+	{
+		SketchCurve* sketchCurveToEdit = dynamic_cast<SketchCurve*>(this->appMenuFlags.selectedSketchObject1);
+		AppGUI::EditSketchCurveDialogue(this->currentScene, this->currentSketch, sketchCurveToEdit);
+	}
+	else if (this->appMenuFlags.newSurfaceDialogue)
+	{
+		AppGUI::NewSurfaceDialogue(this->currentScene);
+	}
+	else if (this->appMenuFlags.newRuledDialogue)
+	{
+		AppGUI::NewRuledDialogue(this->currentScene);
+	}
 	//render Dear ImGUI GUI
 	//begin a test window -- will eventually become
 	//the "scene tree" --bit of a misnomer for now

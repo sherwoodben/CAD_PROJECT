@@ -168,6 +168,7 @@
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Sketch.cpp" />
     <ClCompile Include="SketchObjects.cpp" />
+    <ClCompile Include="Surface.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\imgui\imconfig.h" />
@@ -194,6 +195,7 @@
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Sketch.h" />
     <ClInclude Include="SketchObjects.h" />
+    <ClInclude Include="Surface.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="flat_shader.fs" />

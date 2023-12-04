@@ -22,6 +22,7 @@
 #include "CAD_SCENE.h"
 #include "Shader.h"
 #include "Message.h"
+#include "Sketch.h"
 
 class CAD_APP
 {
@@ -41,6 +42,15 @@ public:
 	//"head" main loop function
 	void MainLoop();
 
+	CAD_SCENE* RestartApp() {
+		if (this->currentScene!= nullptr)
+		{
+			delete this->currentScene;
+		}
+		this->currentScene = new CAD_SCENE(this);
+		return currentScene;
+	}
+
 	//returns if we want to close the window or not
 	bool ShouldClose() { return glfwWindowShouldClose(this->applicationWindow); };
 
@@ -58,10 +68,13 @@ public:
 	Shader* texturedPlaneShader = nullptr;
 	Shader* inSketchShader = nullptr;
 
+	Sketch* currentSketch = nullptr;
+
 private:
 	//pointers to the main window and current scene
 	GLFWwindow* applicationWindow = nullptr;
 	CAD_SCENE* currentScene = nullptr;
+	
 
 
 	//static Shader* applicationShaders[];

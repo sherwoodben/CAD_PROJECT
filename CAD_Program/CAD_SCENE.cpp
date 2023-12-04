@@ -33,29 +33,33 @@ void CAD_SCENE::LoadDefaultObjects()
 	//SET UP PLANES
 	this->LoadDefaultPlanes();
 
-	Point3D debugPoints1[6] = {
-		Point3D(0.0f, 0.0f, 0.0f),
-		Point3D(1.0f, 1.0f, 1.0f),
-		Point3D(-2.0f, 2.0f, 2.0f),
-		Point3D(-3.0f, -3.0f, 3.0f),
-		Point3D(4.0f, -4.0f, 4.0f),
-		Point3D(5.0f, 5.0f, 5.0f)
+	//TEST SURFACES
+	Point3D testPoints1[3] = {
+		Point3D(5.0f, 0.0f, 0.0f),
+		Point3D(5.0f, 0.0f, 5.0f),
+		Point3D(0.0f, 0.0f, 5.0f)
 	};
 
-	BSpline3D* testQuadBSpline = new BSpline3D();
-	testQuadBSpline->SetControlPoints(6, 2, debugPoints1);
-	this->AddSceneObject(testQuadBSpline);
-	testQuadBSpline = nullptr;
+	Point3D testPoints2[3] = {
+		Point3D(5.0f, 10.0f, 0.0f),
+		Point3D(5.0f, 10.0f, 5.0f),
+		Point3D(0.0f, 10.0f, 5.0f)
+	};
 
-	BSpline3D* testCubicBSpline = new BSpline3D();
-	testCubicBSpline->SetControlPoints(6, 3, debugPoints1);
-	this->AddSceneObject(testCubicBSpline);
-	testCubicBSpline = nullptr;
+	Bezier3D* testBezier1 = new Bezier3D();
+	testBezier1->SetControlPoints(3, testPoints1);
+	testBezier1->displayName = "Curve 1";
+	this->AddSceneObject(testBezier1);
 
-	Bezier3D* testBezier = new Bezier3D();
-	testBezier->SetControlPoints(6, debugPoints1);
-	this->AddSceneObject(testBezier);
-	testBezier = nullptr;
+	Bezier3D* testBezier2 = new Bezier3D();
+	testBezier2->SetControlPoints(3, testPoints2);
+	testBezier2->displayName = "Curve 2";
+	this->AddSceneObject(testBezier2);
+
+	Ruled* testRuled = new Ruled();
+	testRuled->SetCurves(testBezier1, testBezier2);
+	testRuled->displayName = "Ruled Surface";
+	this->AddSceneObject(testRuled);
 }
 
 void CAD_SCENE::LoadDefaultPlanes()
@@ -109,17 +113,64 @@ void CAD_SCENE::AddSceneObject(SceneObject* objectToAdd)
 
 void CAD_SCENE::DeleteObjects()
 {
-	std::erase_if(this->sceneObjects, [](SceneObject* x) {return (x->canDelete && x->tryDelete); });
+
 	for (SceneObject* sO : this->sceneObjects)
 	{
-		sO->tryDelete = false;
+		if (sO->canDelete() && sO->tryDelete)
+		{
+			if (dynamic_cast<Sketch*>(sO) != nullptr)
+			{
+				Sketch* sketchToRemove = (Sketch*)sO;
+				delete sketchToRemove;
+			}
+			else if (dynamic_cast<Curve3D*>(sO) != nullptr)
+			{
+				Curve3D* curveToRemove = (Curve3D*)sO;
+				delete curveToRemove;
+			}
+			else if (dynamic_cast<Surface*>(sO) != nullptr)
+			{
+				Surface* surfaceToRemove = (Surface*)sO;
+				delete surfaceToRemove;
+			}
+		}
+		else
+		{
+			sO->tryDelete = false;
+		}
 	}
 
-	std::erase_if(this->datumObjects, [](SceneObject* x) {return (x->canDelete && x->tryDelete); });
 	for (SceneObject* sO : this->datumObjects)
 	{
-		sO->tryDelete = false;
+		if (sO->canDelete() && sO->tryDelete)
+		{
+			if (dynamic_cast<Point*>(sO) != nullptr)
+			{
+				Point* pointToRemove = (Point*)sO;
+				delete pointToRemove;
+			}
+			else if (dynamic_cast<Axis*>(sO) != nullptr)
+			{
+				Axis* axisToRemove = (Axis*)sO;
+				delete axisToRemove;
+			}
+			else if (dynamic_cast<Plane*>(sO) != nullptr)
+			{
+				Plane* planeToRemove = (Plane*)sO;
+				delete planeToRemove;
+			}
+		}
+		else
+		{
+			sO->tryDelete = false;
+		}
 	}
+
+	std::erase_if(this->sceneObjects, [](SceneObject* x) {return (x->canDelete() && x->tryDelete); });
+	
+
+	std::erase_if(this->datumObjects, [](SceneObject* x) {return (x->canDelete() && x->tryDelete); });
+
 }
 
 void CAD_SCENE::DoArcBallCam()
@@ -162,7 +213,7 @@ void CAD_SCENE::CloseScene()
 
 void CAD_SCENE::ProcessMessage(Message msg)
 {
-	std::cout << msg.messageType << " " << msg.messageData << std::endl;
+	//std::cout << msg.messageType << " " << msg.messageData << std::endl;
 	
 	if (msg.messageType == "DELETE")
 	{
@@ -176,7 +227,7 @@ void CAD_SCENE::ProcessMessage(Message msg)
 	}
 
 	//Middle mouse toggles the arc ball for manipulating the view
-	if (msg.messageType == "M_MOUSE")
+	if (msg.messageType == "M_MOUSE" || (this->sceneState.AltModifier && msg.messageType == "R_MOUSE"))
 	{
 		this->sceneState.ArcBallMode = (msg.messageData == "PRESSED");
 
@@ -205,7 +256,7 @@ void CAD_SCENE::ProcessMessage(Message msg)
 		this->sceneState.AltModifier = (msg.messageData == "PRESSED");
 	}
 
-	if (msg.messageType == "NUM_1" && msg.messageData == "PRESSED")
+	/*if (msg.messageType == "NUM_1" && msg.messageData == "PRESSED")
 	{
 		if (!this->sceneState.ShiftModifier)
 		{
@@ -241,7 +292,7 @@ void CAD_SCENE::ProcessMessage(Message msg)
 	if (msg.messageType == "NUM_4" && msg.messageData == "PRESSED")
 	{
 		this->SetCameraView(CameraState::DefinedView::ISOMETRIC);
-	}
+	}*/
 	
 }
 
@@ -270,36 +321,36 @@ void CAD_SCENE::HandleNewObjectMessage(std::string typeToAdd)
 {
 	if (typeToAdd == "POINT")
 	{
-		std::cout << "Adding Point." << std::endl;
+		//std::cout << "Adding Point." << std::endl;
 		return;
 	}
 	if (typeToAdd == "AXIS")
 	{
-		std::cout << "Add AXIS Implementation Missing." << std::endl;
+		//std::cout << "Add AXIS Implementation Missing." << std::endl;
 		return;
 	}
 	if (typeToAdd == "PLANE")
 	{
-		std::cout << "Add PLANE Implementation Missing." << std::endl;
+		//std::cout << "Add PLANE Implementation Missing." << std::endl;
 		return;
 	}
 	if (typeToAdd == "SKETCH")
 	{
-		std::cout << "Add SKETCH Implementation Missing." << std::endl;
+		//std::cout << "Add SKETCH Implementation Missing." << std::endl;
 		return;
 	}
 	if (typeToAdd == "SURFACE")
 	{
-		std::cout << "Add SURFACE Implementation Missing." << std::endl;
+		//std::cout << "Add SURFACE Implementation Missing." << std::endl;
 		return;
 	}
 	if (typeToAdd == "SOLID")
 	{
-		std::cout << "Add SOLID Implementation Missing." << std::endl;
+		//std::cout << "Add SOLID Implementation Missing." << std::endl;
 		return;
 	}
 
-	std::cout << "UNKNOWN TYPE REQUESTED FOR NEW OBJECT" << std::endl;
+	//std::cout << "UNKNOWN TYPE REQUESTED FOR NEW OBJECT" << std::endl;
 }
 
 void CAD_SCENE::UpdateMousePosition()
@@ -323,7 +374,26 @@ void CAD_SCENE::UpdateMousePosition()
 void CAD_SCENE::UpdateScreenProperties()
 {
 	glfwGetWindowSize(glfwGetCurrentContext(), &this->sceneState.ScreenDimensions[0], &this->sceneState.ScreenDimensions[1]);
-	this->sceneState.ScreenAspectRatio = ((float)this->sceneState.ScreenDimensions[0] / (float)this->sceneState.ScreenDimensions[1]);
+	this->sceneState.ScreenAspectRatio = ((float)(this->sceneState.ScreenDimensions[0] - 256) / (float)this->sceneState.ScreenDimensions[1]);
+}
+
+void CAD_SCENE::UpdateDependents()
+{
+	for (SceneObject* sO : this->sceneObjects )
+	{
+		if (!sO->canDelete())
+		{
+			sO->Update();
+		}
+	}
+
+	for (SceneObject* sO : this->datumObjects)
+	{
+		if (!sO->canDelete())
+		{
+			sO->Update();
+		}
+	}
 }
 
 void CAD_SCENE::UpdateScene()
@@ -351,11 +421,23 @@ void CAD_SCENE::UpdateScene()
 			this->DoTranslateCam();
 		}
 	}
+
+	if (!this->UpToDate)
+	{
+		for (SceneObject* sO : this->sceneObjects)
+		{
+			sO->Update();
+		}
+		for (SceneObject* sO : this->datumObjects)
+		{
+			sO->Update();
+		}
+	}
 }
 
 void CAD_SCENE::RenderScene()
 {
-	//glViewport(0, 0, sceneState.ScreenDimensions[0], sceneState.ScreenDimensions[1]);
+	glViewport(256, 0, sceneState.ScreenDimensions[0] - 256, sceneState.ScreenDimensions[1]);
 	//enable openGL depth test
 	glEnable(GL_DEPTH_TEST);
 
@@ -413,7 +495,7 @@ void CAD_SCENE::RenderScene()
 			}
 
 			//pass different shader to render function depending on object type
-			if (sO->objectType == "Point" || sO->objectType == "Axis" || sO->objectType == "Curve")
+			if (sO->objectType == "Point" || sO->objectType == "Axis" || sO->objectType == "Curve" || sO->objectType == "Surface")
 			{
 				sO->RenderObject(this->parentApplication->flatShader);
 			}
@@ -447,7 +529,7 @@ void CAD_SCENE::RenderScene()
 		}
 
 		//pass different shader to render function depending on object type
-		if (sO->objectType == "Point" || sO->objectType == "Axis")
+		if (sO->objectType == "Point" || sO->objectType == "Axis" || sO->objectType == "Curve" || sO->objectType == "Surface")
 		{
 			sO->RenderObject(this->parentApplication->flatShader);
 		}

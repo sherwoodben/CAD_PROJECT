@@ -10,8 +10,8 @@
 class Sketch : public SceneObject
 {
 public:
-	Sketch(Plane* parentPlane) { sketchPlane = parentPlane; this->InitSketch(); };
-	~Sketch() { this->DeleteObject(); };
+	Sketch(Plane* parentPlane) { sketchPlane = parentPlane; this->sketchPlane->AddDependent(); this->InitSketch(); };
+	~Sketch() { this->sketchPlane->RemoveDependent(); this->DeleteObject(); };
 
 	void PassShaderData(Shader* shader);
 	void RenderObject(Shader* sketchInPlaneShader);
@@ -27,6 +27,8 @@ public:
 	void DeleteSketchObjects();
 
 	void DeleteObject();
+
+	void Update() {};
 
 	glm::vec3 SketchToWorldPosition(float x, float y);
 

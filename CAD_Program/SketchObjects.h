@@ -7,7 +7,7 @@
 #include "CurveFunctions.h"
 
 #define MAX_CTRL_PTS 16
-#define CURVE_QUALITY 18
+#define CURVE_QUALITY 33
 
 struct SketchObject
 {
@@ -28,10 +28,20 @@ struct SketchObject
 		this->displayName = newName;
 	}
 
+	void DeleteObjects()
+	{
+
+	}
+
 	bool isSelected = false;
 
 	bool tryDelete = false;
-	bool canDelete = true;
+	bool canDelete()  { return this->numDependents < 1; };
+
+	void AddDependent() { this->numDependents++; };
+	void removeDependent() { this->numDependents--; };
+
+	int numDependents = 0;
 
 	unsigned int objectID = -1;
 
@@ -40,6 +50,7 @@ struct SketchObject
 
 struct SketchPoint : public SketchObject
 {
+	void MovePoint(float x, float y) { this->pos = glm::vec2(x, y); };
 	glm::vec2 pos = glm::vec2(0.0f, 0.0f);
 
 	SketchPoint(float x, float y) : pos(glm::vec2(x, y)) { this->CalculateDisplayPoints(); };
@@ -59,6 +70,7 @@ struct SketchPoint : public SketchObject
 
 	void Render(Shader* shader)
 	{
+		shader->Use();
 		unsigned int VBO;
 		glGenBuffers(1, &VBO);
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -66,7 +78,7 @@ struct SketchPoint : public SketchObject
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
-		glPointSize(12.5f);
+		glPointSize(50.f);
 		shader->setVec4("objectColor", glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 		glDrawArrays(GL_POINTS, 0, 1);
 
@@ -94,6 +106,9 @@ struct SketchCurve : public SketchObject
 	};
 
 	~SketchCurve() {};
+
+	double uMax = 0.0f;
+	double uMin = 0.0f;
 
 	virtual std::string GetName() = 0;
 
@@ -344,7 +359,7 @@ struct SketchBSpline : public SketchCurve
 
 		for (int i = 0; i < this->n() + this->k() + 1; i++)
 		{
-			std::cout << this->knots[i] << std::endl;
+			//std::cout << this->knots[i] << std::endl;
 		}
 	}
 
@@ -484,7 +499,7 @@ struct SketchBezier : public SketchCurve
 		for (int displayPointIdx = 0; displayPointIdx < CURVE_QUALITY; displayPointIdx++)
 		{
 			double u = ((double)displayPointIdx / (double)(CURVE_QUALITY - 1));
-			std::cout << u << std::endl;
+			//std::cout << u << std::endl;
 			float pux = 0.0f;
 			float puy = 0.0f;
 
@@ -494,7 +509,7 @@ struct SketchBezier : public SketchCurve
 				puy += this->controlPoints[i].pos.y * CurveFunctions::BernsteinPolynomial(u, i, this->n());
 			}
 
-			std::cout << "(x,y): " << pux << ", " << puy << std::endl;
+			//std::cout << "(x,y): " << pux << ", " << puy << std::endl;
 			this->displayPoints[(2 * displayPointIdx)] = pux;
 			this->displayPoints[(2 * displayPointIdx) + 1] = puy;
 

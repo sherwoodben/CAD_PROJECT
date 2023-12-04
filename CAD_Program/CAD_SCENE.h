@@ -19,6 +19,7 @@
 #include "Camera.h"
 #include "Shader.h"
 #include "3DCurves.h"
+#include "Surface.h"
 
 //struct to store the scene state
 struct SceneState
@@ -86,9 +87,13 @@ public:
 	void UpdateMousePosition();
 	void UpdateScreenProperties();
 
+	void UpdateDependents();
+
 	void RenderScene();
 
 	void CloseScene();
+
+	bool UpToDate = true;
 
 private:
 

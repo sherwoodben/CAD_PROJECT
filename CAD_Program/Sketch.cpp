@@ -38,7 +38,7 @@ void Sketch::RenderObject(Shader* sketchInPlaneShader)
 	
 	int errorVal = glGetError();
 	
-	if (errorVal < 0)
+	/*if (errorVal < 0)
 	{
 		std::cout << "ERROR: " << errorVal << std::endl;
 		std::cout << "GL_NO_ERROR: " << GL_NO_ERROR << std::endl;
@@ -49,7 +49,7 @@ void Sketch::RenderObject(Shader* sketchInPlaneShader)
 		std::cout << "GL_OUT_OF_MEMORY: " << GL_OUT_OF_MEMORY << std::endl;
 		std::cout << "GL_STACK_UNDERFLOW: " << GL_STACK_UNDERFLOW << std::endl;
 		std::cout << "GL_STACK_OVERFLOW: " << GL_STACK_OVERFLOW << std::endl;
-	}
+	}*/
 }
 
 void Sketch::RenderSketchObjects(Shader* shader)
@@ -97,7 +97,7 @@ void Sketch::RenderSketchObjects(Shader* shader)
 
 void Sketch::DeleteSketchObjects()
 {
-	std::erase_if(this->sketchObjects, [](SketchObject* x) {return (x->canDelete && x->tryDelete); });
+	std::erase_if(this->sketchObjects, [](SketchObject* x) {return (x->canDelete() && x->tryDelete); });
 	for (SketchObject* sO : this->sketchObjects)
 	{
 		sO->tryDelete = false;
@@ -165,7 +165,7 @@ void Sketch::InitSketch()
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		std::cout << "SketchObject: framebuffer error." << std::endl;
+		//std::cout << "SketchObject: framebuffer error." << std::endl;
 	}
 
 	//unbind the framebuffer
@@ -173,7 +173,7 @@ void Sketch::InitSketch()
 
 
 	//test implementations
-	this->AddPoint(0.0f, 0.4f);
+	this->AddPoint(5.0f, 5.0f);
 	
 	this->AddLine(SketchPoint(0.125f, 0.125f), SketchPoint(0.125f, -0.125f));
 	this->AddLine(SketchPoint(0.125f, -0.125f), SketchPoint(0.25f, -0.125f));

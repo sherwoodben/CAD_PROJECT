@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include "SceneObject.h"
+#include "Sketch.h"
 #include "Point.h"
 #include "CurveFunctions.h"
 
@@ -25,7 +26,7 @@ public:
 		this->InitCurve();
 	};
 
-	~Curve3D() {};
+	virtual ~Curve3D() {};
 
 	void InitCurve()
 	{
@@ -49,6 +50,8 @@ public:
 
 	double uMin = 0;
 	double uMax = 0;
+
+	std::string curveType = "";
 
 	virtual glm::vec3 GetValueAtParam(double u) = 0;
 
@@ -93,6 +96,8 @@ struct Arc3D : public Curve3D
 
 	Arc3D(Point3D p1, Point3D arcCenter, float thetaExtent, glm::vec3 normalVector, bool reversed = false)
 	{
+		this->curveType = "Arc";
+
 		this->normalVector = normalVector;
 
 		this->p1 = p1;
@@ -111,6 +116,11 @@ struct Arc3D : public Curve3D
 
 		this->CalculateDisplayPoints();
 	}
+
+	void Update()
+	{
+
+	};
 
 	void CalculateDisplayPoints()
 	{
@@ -161,7 +171,7 @@ struct BSpline3D : public Curve3D
 	int* knots = nullptr;
 	int numKnots() { return (this->n() + this->k() + 1); };
 
-	BSpline3D() {};
+	BSpline3D() { this->curveType = "B-Spline"; };
 
 	~BSpline3D()
 	{
@@ -169,6 +179,11 @@ struct BSpline3D : public Curve3D
 		{
 			delete[] this->knots;
 		}
+	};
+
+	void Update()
+	{
+
 	};
 
 	void UpdateKnots()
@@ -202,11 +217,11 @@ struct BSpline3D : public Curve3D
 
 		for (int i = 0; i < this->n() + this->k() + 1; i++)
 		{
-			std::cout << this->knots[i] << std::endl;
+			//std::cout << this->knots[i] << std::endl;
 		}
 	}
 
-	void SetControlPoints(int numPoints, int polynomialOrder, Point3D* controlPoints)
+	void SetControlPoints(int numPoints, int polynomialOrder, Point3D controlPoints[])
 	{
 		this->numControlPoints = numPoints;
 		this->polynomialOrder = polynomialOrder;
@@ -305,9 +320,14 @@ struct Bezier3D : public Curve3D
 	int polynomialOrder = -1;
 	Point3D controlPoints[MAX_CTRL_PTS];
 
-	Bezier3D(){};
+	Bezier3D() { this->curveType = "Bezier"; };
 
 	~Bezier3D() {};
+
+	void Update()
+	{
+
+	};
 
 	void SetControlPoints(int numPoints, Point3D* controlPoints)
 	{

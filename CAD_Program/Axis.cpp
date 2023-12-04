@@ -38,23 +38,14 @@ unsigned int Axis::axisIndices[] =
 Axis::Axis(glm::vec3 axisVector, glm::vec3 axisPoint)
 {
     this->InitAxis();
-    this->axisDirection = axisVector;
-    this->SetObjectPosition(axisPoint);
+    glm::vec3 p2 = axisPoint + axisDirection;
+    this->ChangeWithPoints(axisPoint, p2, false);
 }
 
 Axis::Axis(glm::vec3 point1, glm::vec3 point2, bool reverse)
 {
     this->InitAxis();
-    if (!reverse)
-    {
-        this->axisDirection = glm::normalize(glm::vec3(point2 - point1));
-        this->SetObjectPosition(point1);
-    }
-    else
-    {
-        this->axisDirection = glm::normalize(glm::vec3(point2 - point1));
-        this->SetObjectPosition(point2);
-    }
+    this->ChangeWithPoints(point1, point2, reverse);
 }
 
 Axis::Axis(const char* basisDirection)
@@ -125,6 +116,20 @@ void Axis::RenderObject(Shader* shader)
     this->PassShaderData(shader);
     //we have 36 indices (remove hard coded value at some point)
     this->RenderAsTriangles(NUM_AXIS_INDICES);
+}
+
+void Axis::ChangeWithPoints(glm::vec3 p1, glm::vec3 p2, bool reversed)
+{
+    if (!reversed)
+    {
+        this->axisDirection = glm::normalize(glm::vec3(p2 - p1));
+        this->SetObjectPosition(p1);
+    }
+    else
+    {
+        this->axisDirection = glm::normalize(glm::vec3(p1 - p2));
+        this->SetObjectPosition(p2);
+    }
 }
 
 glm::mat4 Axis::GetModelMatrix()

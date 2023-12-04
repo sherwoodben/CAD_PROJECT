@@ -14,6 +14,8 @@ public:
 
 	void DeleteObject();
 
+	void Update() {};
+
 private:
 	double pointSize = 0.01f;
 

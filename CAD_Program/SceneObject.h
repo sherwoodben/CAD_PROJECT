@@ -36,7 +36,7 @@ class SceneObject
 {
 public:
 	SceneObject() {};
-	virtual ~SceneObject() {};
+	virtual ~SceneObject() { };// std::cout << "Destroying base" << std::endl;
 
 	//keeps track of the object's display
 	//name
@@ -62,7 +62,7 @@ public:
 	bool tryDelete = false;
 
 	//keep track of if we CAN delete the object or not
-	bool canDelete = true;
+	bool canDelete() { return (this->numDependents <= 0); };
 
 	//virtual function for rendering a scene
 	//object; each type of object will implement
@@ -113,7 +113,14 @@ public:
 	bool GetIsTransparent() { return this->hasTransparency; };
 	void SetIsTransparent(bool newValue) { this->hasTransparency = newValue; };
 
+
+	virtual void Update() = 0;
+	void AddDependent() { this->numDependents++; };
+	void RemoveDependent() { this->numDependents--; };
+
 private:
+	//keep track of how many dependents we have
+	int numDependents = 0;
 	//an ID for this SceneObject's VBO
 	//(vertex buffer object)
 	unsigned int VBO = 0;
