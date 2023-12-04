@@ -32,34 +32,6 @@ void CAD_SCENE::LoadDefaultObjects()
 
 	//SET UP PLANES
 	this->LoadDefaultPlanes();
-
-	//TEST SURFACES
-	Point3D testPoints1[3] = {
-		Point3D(5.0f, 0.0f, 0.0f),
-		Point3D(5.0f, 0.0f, 5.0f),
-		Point3D(0.0f, 0.0f, 5.0f)
-	};
-
-	Point3D testPoints2[3] = {
-		Point3D(5.0f, 10.0f, 0.0f),
-		Point3D(5.0f, 10.0f, 5.0f),
-		Point3D(0.0f, 10.0f, 5.0f)
-	};
-
-	Bezier3D* testBezier1 = new Bezier3D();
-	testBezier1->SetControlPoints(3, testPoints1);
-	testBezier1->displayName = "Curve 1";
-	this->AddSceneObject(testBezier1);
-
-	Bezier3D* testBezier2 = new Bezier3D();
-	testBezier2->SetControlPoints(3, testPoints2);
-	testBezier2->displayName = "Curve 2";
-	this->AddSceneObject(testBezier2);
-
-	Ruled* testRuled = new Ruled();
-	testRuled->SetCurves(testBezier1, testBezier2);
-	testRuled->displayName = "Ruled Surface";
-	this->AddSceneObject(testRuled);
 }
 
 void CAD_SCENE::LoadDefaultPlanes()
